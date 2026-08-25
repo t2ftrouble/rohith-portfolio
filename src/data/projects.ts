@@ -1,0 +1,143 @@
+import oneLastDay from "@/assets/project-one-last-day.webp";
+import kadalar from "@/assets/project-kadalar.webp";
+import radhal from "@/assets/project-radhal.webp";
+import toothpaste from "@/assets/project-toothpaste.webp";
+
+export type Project = {
+  slug: string;
+  number: string;
+  title: string;
+  type: string;
+  role: string;
+  year?: string;
+  status?: string;
+  description: string;
+  process: string[];
+  visuals: string;
+  image: string;
+  hasVideo?: boolean;
+  videoId?: string;
+  credits?: {
+    role: string;
+    name: string;
+  }[];
+  fullCredits?: string;
+  category: "FILMMAKING" | "VFX / CG" | "EDITING" | "DESIGN" | "CONTENT";
+};
+
+// Default projects - used as initial data and fallback
+export const defaultProjects: Project[] = [
+  {
+    slug: "one-last-day",
+    number: "01",
+    title: "One Last Day",
+    type: "Short Film",
+    role: "Story • Screenplay • Director • Editor • DI",
+    year: "2023",
+    status: "Released",
+    description:
+      "A heartfelt story of silence, regret and final goodbyes. This was Rohith V's first short film attempt, made without prior filmmaking experience. Shot entirely on iPhone with zero budget. The project became a major learning experience through experimentation, mistakes, storytelling, direction, editing and teamwork.",
+    process: [
+      "Story and screenplay development",
+      "Direction on set",
+      "Shot planning and scene composition",
+      "Visual storytelling and blocking",
+      "Editing and post-production through final cut",
+      "DI (Digital Intermediate)",
+    ],
+    visuals: "Film video, poster, film stills, editing/VFX breakdown",
+    image: oneLastDay,
+    hasVideo: true,
+    videoId: "tUnBO1O66Fc",
+    fullCredits:
+      "Written / Story / Screenplay / Directed / Edited / DI: Rohith V\n\nCast:\nYash Vijay as Deva\nVarsha\n\nAssistant Director / Script Supervisor:\nYashwanth VK\n\nAssistant Directors:\nRamu\nYukesh\n\nDOP:\nYashwanth VK\nBhuvana\n\nMusic:\nDanny\nGovarthan\n\nDubbing:\nDharshan Karthi as Loran\nYukendiran — VO\n\nCrew:\nRitesh\nYabees\nSalvador Madhavan\n\nSpecial Thanks:\nRegan\nFarwys\n\nShot with: iPhone\nBudget: Zero\nLanguage: Tamil with English essence",
+    category: "FILMMAKING",
+  },
+  {
+    slug: "toothpaste",
+    number: "02",
+    title: "Toothpaste",
+    type: "Short Film",
+    role: "Story • Direction • Editing",
+    year: "2024",
+    status: "Completed",
+    description:
+      "A suspenseful and mind-bending short film that turns an everyday morning routine into something unsettling. Shot entirely on iPhone and created with friends in 2024. The project explores suspense, visual storytelling and an unexpected twist using minimal resources.",
+    process: ["Story development", "Direction on set", "Editing and post-production"],
+    visuals: "Video, poster, film stills",
+    image: toothpaste,
+    hasVideo: true,
+    videoId: "JBkb8iHCOh4",
+    fullCredits:
+      "Story / Direction / Editing: Rohith V\n\nDOP: Yashwanth VK\n\nAssistant Directors:\nYukesh\nYash Vijay\n\nCast:\nRamu\nYashwanth VK\n\nMusic: Govarthan",
+    category: "FILMMAKING",
+  },
+  {
+    slug: "kadalar",
+    number: "03",
+    title: "Kadalar",
+    type: "Pilot Film",
+    role: "CG Artist — Selected CGI Contribution",
+    description:
+      "Pilot film directed by Siva Murugan. Contributed to selected CGI work including Candle CGI and News CGI. Some CGI had already been worked on by another CG artist before this contribution.",
+    process: [
+      "Candle CGI contribution",
+      "News CGI contribution",
+      "CG-based visual development",
+      "Post-production support",
+    ],
+    visuals: "Images, actual before/after CGI images, VFX material",
+    image: kadalar,
+    fullCredits:
+      "Director: Siva Murugan\n\nCG Artist — Selected CGI Contribution: Rohith V\n\n(Contributed to Candle CGI and News CGI)",
+    category: "VFX / CG",
+  },
+  {
+    slug: "radhal",
+    number: "04",
+    title: "Radhal",
+    type: "Pilot Film",
+    role: "Assistant Writer — Script & Screenplay",
+    status: "In Pre-Production",
+    description:
+      "Upcoming pilot film project. Currently serving as Assistant Writer for script and screenplay development. The screenplay is currently being developed.",
+    process: [
+      "Story structure development",
+      "Scene development",
+      "Narrative planning",
+      "Script and screenplay assistance",
+    ],
+    visuals: "Screenplay material, pre-production material",
+    image: radhal,
+    fullCredits: "Status: In Pre-Production\n\nRole: Assistant Writer — Script & Screenplay",
+    category: "FILMMAKING",
+  },
+];
+
+// Get projects from localStorage or fall back to defaults
+export function getProjects(): Project[] {
+  if (typeof window === "undefined") {
+    return defaultProjects;
+  }
+
+  try {
+    const stored = localStorage.getItem("rohith-portfolio-projects");
+    if (stored) {
+      const cmsProjects = JSON.parse(stored);
+      // Convert CMS data back to Project type
+      return cmsProjects.map((p: any) => {
+        const { id, galleryImages, client, createdAt, ...project } = p;
+        return project;
+      });
+    }
+  } catch (error) {
+    console.error("Error loading projects from localStorage:", error);
+  }
+
+  return defaultProjects;
+}
+
+// Legacy export for backward compatibility
+export const projects = defaultProjects;
+
+export const getProject = (slug: string) => getProjects().find((p) => p.slug === slug);
