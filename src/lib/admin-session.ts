@@ -23,8 +23,8 @@ export async function createAdminSession(): Promise<string> {
     } as any);
   
   if (error) {
-    console.error('Failed to create admin session:', error);
-    throw new Error('Failed to create session');
+    console.error('Failed to create admin session:', error.message || error);
+    throw new Error(error.message || 'Failed to create session in Supabase');
   }
   
   return token;
