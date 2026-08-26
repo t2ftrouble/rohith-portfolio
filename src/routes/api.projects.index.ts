@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { supabase } from "@/integrations/supabase/client";
 import { verifyAdminToken } from "@/lib/admin-session";
 
 function formatProjectForSupabase(project: any) {
@@ -38,12 +37,12 @@ export const Route = createFileRoute("/api/projects/")({
     handlers: {
       GET: async () => {
         try {
-          // Public read access - fetch from Supabase
-          const { data, error } = await supabase
+          // Public read access - fetch from Supabase using server client
+          const { data, error } = await supabaseAdmin
             .from('projects')
             .select('*')
             .order('number', { ascending: true });
-          
+
           if (error) {
             console.error('Error fetching projects from Supabase:', error);
             return new Response(JSON.stringify({ error: error.message || 'Failed to fetch projects' }), {
@@ -51,7 +50,7 @@ export const Route = createFileRoute("/api/projects/")({
               headers: { 'Content-Type': 'application/json' }
             });
           }
-          
+
           return new Response(JSON.stringify({ projects: data }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
