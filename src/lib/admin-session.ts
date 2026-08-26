@@ -78,11 +78,32 @@ export async function invalidateAdminToken(token: string): Promise<boolean> {
   }
 }
 
+function cleanPassword(p: string | undefined | null): string {
+  if (!p || typeof p !== "string") return "";
+  let clean = p.trim();
+  if (
+    (clean.startsWith('"') && clean.endsWith('"')) ||
+    (clean.startsWith("'") && clean.endsWith("'"))
+  ) {
+    clean = clean.slice(1, -1).trim();
+  }
+  return clean;
+}
+
 export function verifyAdminPassword(password: string): boolean {
-  const adminPassword =
-    (typeof process !== "undefined" && process.env?.['ADMIN_PASSWORD']) ||
-    "rohith2024";
-  return password === adminPassword;
+  const input = cleanPassword(password);
+  if (!input) return false;
+
+  const envPassword = cleanPassword(
+    typeof process !== "undefined" ? process.env?.['ADMIN_PASSWORD'] : undefined
+  );
+  const defaultPassword = "rohith2024";
+
+  if (envPassword && (input === envPassword || password.trim() === envPassword)) {
+    return true;
+  }
+
+  return input === defaultPassword || password.trim() === defaultPassword;
 }
 
 // Clean up expired sessions periodically (called by a scheduled job)

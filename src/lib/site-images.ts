@@ -78,12 +78,14 @@ export const siteImageDefinitions: SiteImageMeta[] = [
   },
 ];
 
+import { resolveImageUrl } from "./asset-resolver";
+
 /**
- * Normalizes URL string
+ * Normalizes URL string and resolves local/Supabase assets
  */
 export function normalizeImageUrl(url: string | undefined | null): string {
   if (!url || typeof url !== "string") return "";
-  return url.trim();
+  return resolveImageUrl(url.trim());
 }
 
 /**

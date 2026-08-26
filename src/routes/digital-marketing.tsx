@@ -14,6 +14,7 @@ import {
 
 import { FocusReveal } from "@/components/FocusReveal";
 import { getSiteImages, defaultSiteImages, type SiteImagesData } from "@/lib/site-images";
+import { resolveImageUrl } from "@/lib/asset-resolver";
 import defaultDmHero from "@/assets/digital marketing hero.jpg";
 import defaultCreative1 from "@/assets/1-creative.jpg";
 import defaultCreative2 from "@/assets/2-cerative.jpg";
@@ -131,7 +132,7 @@ function DigitalMarketing() {
       title: "CINEMATIC BRAND FILMS",
       subtitle: "Story-Driven Commercials & Branded Cinema",
       desc: "High-production commercials, founder documentaries, and cinematic anthems designed to establish undeniable brand prestige.",
-      image: siteImages.creative1 || defaultCreative1,
+      image: resolveImageUrl(siteImages.creative1) || defaultCreative1,
       tag: "STORY & BRANDING",
       deliverables: ["4K Master Commercial", "Brand Documentary", "Cinematic Cutdowns (30s/15s)"],
     },
@@ -140,7 +141,7 @@ function DigitalMarketing() {
       title: "SOCIAL REELS & SHORTS",
       subtitle: "High-Hook Vertical Visual Storytelling",
       desc: "Fast-paced vertical videos engineered with instant psychological hooks, kinetic editing, and high-retention episodic pacing.",
-      image: siteImages.creative2 || defaultCreative2,
+      image: resolveImageUrl(siteImages.creative2) || defaultCreative2,
       tag: "ORGANIC & VIRAL REACH",
       deliverables: ["9:16 Vertical Video Suite", "High-CTR Hook Variations", "Captions & Sound Design"],
     },
@@ -149,7 +150,7 @@ function DigitalMarketing() {
       title: "PERFORMANCE AD CREATIVES",
       subtitle: "Direct-Response Video Ads for Meta & Google",
       desc: "Data-driven video creatives built for paid acquisition campaigns — tested for maximum click-through rates and customer conversion.",
-      image: siteImages.creative3 || defaultCreative3,
+      image: resolveImageUrl(siteImages.creative3) || defaultCreative3,
       tag: "PAID ACQUISITION & ROI",
       deliverables: ["Multi-Angle Creative Tests", "A/B Hook Variations", "Paid Ad Optimization"],
     },
@@ -206,7 +207,7 @@ function DigitalMarketing() {
             className="mt-16 relative aspect-[16/9] sm:aspect-[21/9] w-full overflow-hidden border border-border/80 bg-navy/40"
           >
             <img
-              src={siteImages.digitalMarketingHero || defaultDmHero}
+              src={resolveImageUrl(siteImages.digitalMarketingHero) || defaultDmHero}
               alt="Digital Marketing Hero — Cinematic Commercial Production"
               loading="lazy"
               decoding="async"

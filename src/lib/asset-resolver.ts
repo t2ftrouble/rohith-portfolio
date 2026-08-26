@@ -13,6 +13,11 @@ import aboutEditroom from "@/assets/about-editroom.webp";
 import digitalMarketingChennai from "@/assets/digital marketing chennai.webp";
 import digitalMarketingWorldwide from "@/assets/digital marketing worldwide.webp";
 
+import defaultDmHero from "@/assets/digital marketing hero.jpg";
+import defaultCreative1 from "@/assets/1-creative.jpg";
+import defaultCreative2 from "@/assets/2-cerative.jpg";
+import defaultCreative3 from "@/assets/3 creative.jpg";
+
 export const LOCAL_ASSET_MAP: Record<string, string> = {
   "project-one-last-day.webp": oneLastDay,
   "project-toothpaste.webp": toothpaste,
@@ -25,6 +30,15 @@ export const LOCAL_ASSET_MAP: Record<string, string> = {
   "about-editroom.webp": aboutEditroom,
   "digital marketing chennai.webp": digitalMarketingChennai,
   "digital marketing worldwide.webp": digitalMarketingWorldwide,
+  "digital marketing hero.jpg": defaultDmHero,
+  "digital-marketing-hero.jpg": defaultDmHero,
+  "1-creative.jpg": defaultCreative1,
+  "1 creative.jpg": defaultCreative1,
+  "2-cerative.jpg": defaultCreative2,
+  "2-creative.jpg": defaultCreative2,
+  "2 creative.jpg": defaultCreative2,
+  "3 creative.jpg": defaultCreative3,
+  "3-creative.jpg": defaultCreative3,
 };
 
 /**
@@ -49,14 +63,20 @@ export function resolveImageUrl(src: string | undefined | null): string {
   }
 
   // Check direct match in local asset map
-  if (LOCAL_ASSET_MAP[trimmed]) {
-    return LOCAL_ASSET_MAP[trimmed];
+  const directMatch = LOCAL_ASSET_MAP[trimmed];
+  if (directMatch) {
+    return directMatch;
   }
 
   // Extract basename if full path was given (e.g. /src/assets/project-one-last-day.webp)
-  const basename = trimmed.split("/").pop() || trimmed;
-  if (LOCAL_ASSET_MAP[basename]) {
-    return LOCAL_ASSET_MAP[basename];
+  let basename = trimmed.split("/").pop() || trimmed;
+  try {
+    basename = decodeURIComponent(basename);
+  } catch {}
+
+  const basenameMatch = LOCAL_ASSET_MAP[basename];
+  if (basenameMatch) {
+    return basenameMatch;
   }
 
   // Fallback to static public folder path if it starts with / or is relative
