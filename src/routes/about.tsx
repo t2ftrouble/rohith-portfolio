@@ -10,6 +10,14 @@ import { Stage } from "@/components/three/Stage";
 import { getSiteImages, defaultSiteImages, type SiteImagesData } from "@/lib/site-images";
 
 export const Route = createFileRoute("/about")({
+  loader: async () => {
+    try {
+      const siteImages = await getSiteImages();
+      return { siteImages };
+    } catch {
+      return { siteImages: defaultSiteImages };
+    }
+  },
   head: () => ({
     meta: [
       { title: "The Filmmaker — About Rohith V" },
@@ -30,7 +38,10 @@ export const Route = createFileRoute("/about")({
 });
 
 function About() {
-  const [siteImages, setSiteImages] = useState<SiteImagesData>(defaultSiteImages);
+  const loaderData = Route.useLoaderData();
+  const [siteImages, setSiteImages] = useState<SiteImagesData>(
+    loaderData?.siteImages || defaultSiteImages
+  );
 
   useEffect(() => {
     getSiteImages().then(setSiteImages).catch(() => {});

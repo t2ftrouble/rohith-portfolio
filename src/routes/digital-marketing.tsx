@@ -21,6 +21,14 @@ import defaultCreative2 from "@/assets/2-cerative.jpg";
 import defaultCreative3 from "@/assets/3 creative.jpg";
 
 export const Route = createFileRoute("/digital-marketing")({
+  loader: async () => {
+    try {
+      const siteImages = await getSiteImages();
+      return { siteImages };
+    } catch {
+      return { siteImages: defaultSiteImages };
+    }
+  },
   head: () => ({
     meta: [
       { title: "Digital Marketing & Video Ads — Rohith V | Cinematic Commercials" },
@@ -112,7 +120,10 @@ const workflowSteps = [
 ];
 
 function DigitalMarketing() {
-  const [siteImages, setSiteImages] = useState<SiteImagesData>(defaultSiteImages);
+  const loaderData = Route.useLoaderData();
+  const [siteImages, setSiteImages] = useState<SiteImagesData>(
+    loaderData?.siteImages || defaultSiteImages
+  );
 
   useEffect(() => {
     getSiteImages().then(setSiteImages).catch(() => {});
