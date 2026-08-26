@@ -10,6 +10,14 @@ import { Stage } from "@/components/three/Stage";
 import { VideoModal } from "@/components/VideoModal";
 
 export const Route = createFileRoute("/portfolio/")({
+  loader: async () => {
+    try {
+      const dynamicProjects = await getProjects();
+      return { projects: dynamicProjects };
+    } catch {
+      return { projects: [] };
+    }
+  },
   head: () => ({
     meta: [
       { title: "Selected Work — Rohith V | Filmmaker" },
@@ -39,21 +47,28 @@ const filters = [
 ] as const;
 
 function Portfolio() {
+  const loaderData = Route.useLoaderData();
   const [activeFilter, setActiveFilter] = useState<
     "all" | "FILMMAKING" | "VFX / CG" | "EDITING" | "DESIGN" | "CONTENT"
   >("all");
   const [showreelOpen, setShowreelOpen] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Project[]>(
+    loaderData?.projects && loaderData.projects.length > 0 ? loaderData.projects : []
+  );
 
-  // Load projects from Supabase on mount
+  // Load / reload projects from Supabase on mount
   useEffect(() => {
-    getProjects().then(setProjects);
+    getProjects().then((data) => {
+      if (data && data.length > 0) setProjects(data);
+    });
   }, []);
 
   // Reload projects when custom event fires (for admin updates)
   useEffect(() => {
     const handleProjectUpdate = () => {
-      getProjects().then(setProjects);
+      getProjects().then((data) => {
+        if (data && data.length > 0) setProjects(data);
+      });
     };
 
     window.addEventListener("custom-project-update", handleProjectUpdate);
@@ -66,11 +81,11 @@ function Portfolio() {
   const filteredProjects =
     activeFilter === "all" ? projects : projects.filter((p) => p.category === activeFilter);
 
-  const featuredProject = projects.find((p) => p.slug === "one-last-day");
+  const featuredProject = projects.find((p) => p.slug === "one-last-day") || projects[0];
   const otherProjects =
     activeFilter === "all"
-      ? projects.filter((p) => p.slug !== "one-last-day")
-      : projects.filter((p) => p.category === activeFilter && p.slug !== "one-last-day");
+      ? projects.filter((p) => p.slug !== (featuredProject?.slug || "one-last-day"))
+      : projects.filter((p) => p.category === activeFilter && p.slug !== (featuredProject?.slug || "one-last-day"));
 
   return (
     <section className="relative">

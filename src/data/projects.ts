@@ -148,6 +148,8 @@ export const defaultProjects: Project[] = [
   },
 ];
 
+import { supabase } from "@/integrations/supabase/client";
+
 function transformSupabaseProject(p: any): Project {
   return {
     slug: p.slug,
@@ -178,23 +180,38 @@ function transformSupabaseProject(p: any): Project {
   };
 }
 
-// Get projects from API route (works universally in SSR, server, and client)
+// Get projects directly from Supabase (works universally in SSR, serverless, and browser client)
 export async function getProjects(): Promise<Project[]> {
   try {
-    const response = await fetch("/api/projects");
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      console.error("Failed to fetch projects from API:", errorData);
-      throw new Error(errorData.error || "Failed to fetch projects");
-    }
-    const data = await response.json();
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .order("number", { ascending: true });
 
-    if (!data.projects || !Array.isArray(data.projects)) {
-      console.error("Invalid response format from API:", data);
-      throw new Error("Invalid response format from API");
+    if (!error && data && data.length > 0) {
+      return data.map(transformSupabaseProject);
     }
 
-    return data.projects.map(transformSupabaseProject);
+    if (error) {
+      console.warn("Supabase query returned error, trying API endpoint:", error);
+    }
+
+    // If running in browser and direct query failed, try API route as secondary option
+    if (typeof window !== "undefined") {
+      const response = await fetch("/api/projects");
+      if (response.ok) {
+        const json = await response.json();
+        if (json.projects && Array.isArray(json.projects)) {
+          return json.projects.map(transformSupabaseProject);
+        }
+      }
+    }
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []).map(transformSupabaseProject);
   } catch (error) {
     console.error("getProjects error:", error);
     throw error;
@@ -205,6 +222,21 @@ export async function getProjects(): Promise<Project[]> {
 export const projects = defaultProjects;
 
 export const getProject = async (slug: string): Promise<Project | undefined> => {
+  try {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (!error && data) {
+      return transformSupabaseProject(data);
+    }
+  } catch (error) {
+    console.warn(`Direct getProject query for ${slug} failed, checking project list:`, error);
+  }
+
   const projectsList = await getProjects();
   return projectsList.find((p) => p.slug === slug);
 };
+

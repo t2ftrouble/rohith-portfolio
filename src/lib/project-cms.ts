@@ -38,24 +38,38 @@ export type ProjectCMSData = {
   id: string; // Unique ID for CRUD operations
 } & ProjectFormData;
 
-// Get all projects from Supabase via API
+import { supabase } from "@/integrations/supabase/client";
+
+// Get all projects from Supabase via direct client or API
 export async function getProjects(): Promise<ProjectCMSData[]> {
   try {
-    const response = await fetch("/api/projects");
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-      console.error("Failed to fetch projects from API:", errorData);
-      throw new Error(errorData.error || "Failed to fetch projects");
-    }
-    const data = await response.json();
+    let projectsData: any[] = [];
 
-    if (!data.projects || !Array.isArray(data.projects)) {
-      console.error("Invalid response format from API:", data);
-      throw new Error("Invalid response format from API");
+    // Try direct Supabase query first
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .order("number", { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      projectsData = data;
+    } else if (typeof window !== "undefined") {
+      // Fall back to API route if direct query didn't return data
+      const response = await fetch("/api/projects");
+      if (response.ok) {
+        const json = await response.json();
+        if (json.projects && Array.isArray(json.projects)) {
+          projectsData = json.projects;
+        }
+      }
+    }
+
+    if (!projectsData || projectsData.length === 0) {
+      if (error) throw error;
     }
 
     // Transform Supabase data to CMS format
-    return data.projects.map((p: any) => ({
+    return projectsData.map((p: any) => ({
       id: p.id,
       slug: p.slug,
       number: p.number,

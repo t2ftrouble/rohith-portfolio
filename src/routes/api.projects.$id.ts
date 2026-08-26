@@ -42,6 +42,39 @@ function formatProjectForSupabase(project: any) {
 export const Route = createFileRoute("/api/projects/$id")({
   server: {
     handlers: {
+      GET: async ({ params }) => {
+        try {
+          const { id } = params as { id: string };
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let query = supabaseAdmin.from('projects').select('*');
+          if (isUuid) {
+            query = query.eq('id', id);
+          } else {
+            query = query.eq('slug', id);
+          }
+          const { data, error } = await query.single();
+          if (error || !data) {
+            return new Response(JSON.stringify({ error: 'Project not found' }), {
+              status: 404,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          return new Response(JSON.stringify({ project: data }), {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'public, max-age=10, s-maxage=30'
+            }
+          });
+        } catch (err) {
+          console.error('[API GET /api/projects/$id] Error:', err);
+          return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Internal Server Error' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      },
+
       PUT: async ({ request, params }) => {
         try {
           const body = await request.json();
