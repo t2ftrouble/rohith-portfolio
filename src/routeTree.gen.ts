@@ -14,8 +14,16 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DigitalMarketingRouteImport } from './routes/digital-marketing'
+import { Route as ApiSiteImagesRouteImport } from './routes/api.site-images'
+import { Route as ApiSocialLinksRouteImport } from './routes/api.social-links'
+import { Route as ApiUploadRouteImport } from './routes/api.upload'
 import { Route as PortfolioIndexRouteImport } from './routes/portfolio.index'
 import { Route as PortfolioSlugRouteImport } from './routes/portfolio.$slug'
+import { Route as ApiAdminLoginRouteImport } from './routes/api.admin.login'
+import { Route as ApiAdminLogoutRouteImport } from './routes/api.admin.logout'
+import { Route as ApiAdminVerifyRouteImport } from './routes/api.admin.verify'
+import { Route as ApiProjectsIndexRouteImport } from './routes/api.projects.index'
+import { Route as ApiProjectsIdRouteImport } from './routes/api.projects.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -42,6 +50,21 @@ const DigitalMarketingRoute = DigitalMarketingRouteImport.update({
   path: '/digital-marketing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSiteImagesRoute = ApiSiteImagesRouteImport.update({
+  id: '/api/site-images',
+  path: '/api/site-images',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSocialLinksRoute = ApiSocialLinksRouteImport.update({
+  id: '/api/social-links',
+  path: '/api/social-links',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadRoute = ApiUploadRouteImport.update({
+  id: '/api/upload',
+  path: '/api/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortfolioIndexRoute = PortfolioIndexRouteImport.update({
   id: '/portfolio/',
   path: '/portfolio/',
@@ -52,6 +75,31 @@ const PortfolioSlugRoute = PortfolioSlugRouteImport.update({
   path: '/portfolio/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminLoginRoute = ApiAdminLoginRouteImport.update({
+  id: '/api/admin/login',
+  path: '/api/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminLogoutRoute = ApiAdminLogoutRouteImport.update({
+  id: '/api/admin/logout',
+  path: '/api/admin/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminVerifyRoute = ApiAdminVerifyRouteImport.update({
+  id: '/api/admin/verify',
+  path: '/api/admin/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProjectsIndexRoute = ApiProjectsIndexRouteImport.update({
+  id: '/api/projects/',
+  path: '/api/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProjectsIdRoute = ApiProjectsIdRouteImport.update({
+  id: '/api/projects/$id',
+  path: '/api/projects/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,8 +107,16 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/site-images': typeof ApiSiteImagesRoute
+  '/api/social-links': typeof ApiSocialLinksRoute
+  '/api/upload': typeof ApiUploadRoute
   '/portfolio/$slug': typeof PortfolioSlugRoute
   '/portfolio/': typeof PortfolioIndexRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/verify': typeof ApiAdminVerifyRoute
+  '/api/projects/$id': typeof ApiProjectsIdRoute
+  '/api/projects/': typeof ApiProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +124,16 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/site-images': typeof ApiSiteImagesRoute
+  '/api/social-links': typeof ApiSocialLinksRoute
+  '/api/upload': typeof ApiUploadRoute
   '/portfolio/$slug': typeof PortfolioSlugRoute
   '/portfolio': typeof PortfolioIndexRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/verify': typeof ApiAdminVerifyRoute
+  '/api/projects/$id': typeof ApiProjectsIdRoute
+  '/api/projects': typeof ApiProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +142,16 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/site-images': typeof ApiSiteImagesRoute
+  '/api/social-links': typeof ApiSocialLinksRoute
+  '/api/upload': typeof ApiUploadRoute
   '/portfolio/$slug': typeof PortfolioSlugRoute
   '/portfolio/': typeof PortfolioIndexRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/verify': typeof ApiAdminVerifyRoute
+  '/api/projects/$id': typeof ApiProjectsIdRoute
+  '/api/projects/': typeof ApiProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +161,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/site-images'
+    | '/api/social-links'
+    | '/api/upload'
     | '/portfolio/$slug'
     | '/portfolio/'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/verify'
+    | '/api/projects/$id'
+    | '/api/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +178,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/site-images'
+    | '/api/social-links'
+    | '/api/upload'
     | '/portfolio/$slug'
     | '/portfolio'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/verify'
+    | '/api/projects/$id'
+    | '/api/projects'
   id:
     | '__root__'
     | '/'
@@ -107,8 +195,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/site-images'
+    | '/api/social-links'
+    | '/api/upload'
     | '/portfolio/$slug'
     | '/portfolio/'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/verify'
+    | '/api/projects/$id'
+    | '/api/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,8 +213,16 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ContactRoute: typeof ContactRoute
   DigitalMarketingRoute: typeof DigitalMarketingRoute
+  ApiSiteImagesRoute: typeof ApiSiteImagesRoute
+  ApiSocialLinksRoute: typeof ApiSocialLinksRoute
+  ApiUploadRoute: typeof ApiUploadRoute
   PortfolioSlugRoute: typeof PortfolioSlugRoute
   PortfolioIndexRoute: typeof PortfolioIndexRoute
+  ApiAdminLoginRoute: typeof ApiAdminLoginRoute
+  ApiAdminLogoutRoute: typeof ApiAdminLogoutRoute
+  ApiAdminVerifyRoute: typeof ApiAdminVerifyRoute
+  ApiProjectsIdRoute: typeof ApiProjectsIdRoute
+  ApiProjectsIndexRoute: typeof ApiProjectsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -158,6 +262,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DigitalMarketingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/site-images': {
+      id: '/api/site-images'
+      path: '/api/site-images'
+      fullPath: '/api/site-images'
+      preLoaderRoute: typeof ApiSiteImagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/social-links': {
+      id: '/api/social-links'
+      path: '/api/social-links'
+      fullPath: '/api/social-links'
+      preLoaderRoute: typeof ApiSocialLinksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload': {
+      id: '/api/upload'
+      path: '/api/upload'
+      fullPath: '/api/upload'
+      preLoaderRoute: typeof ApiUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portfolio/': {
       id: '/portfolio/'
       path: '/portfolio'
@@ -172,6 +297,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/login': {
+      id: '/api/admin/login'
+      path: '/api/admin/login'
+      fullPath: '/api/admin/login'
+      preLoaderRoute: typeof ApiAdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/logout': {
+      id: '/api/admin/logout'
+      path: '/api/admin/logout'
+      fullPath: '/api/admin/logout'
+      preLoaderRoute: typeof ApiAdminLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/verify': {
+      id: '/api/admin/verify'
+      path: '/api/admin/verify'
+      fullPath: '/api/admin/verify'
+      preLoaderRoute: typeof ApiAdminVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/projects/': {
+      id: '/api/projects/'
+      path: '/api/projects'
+      fullPath: '/api/projects/'
+      preLoaderRoute: typeof ApiProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/projects/$id': {
+      id: '/api/projects/$id'
+      path: '/api/projects/$id'
+      fullPath: '/api/projects/$id'
+      preLoaderRoute: typeof ApiProjectsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -181,8 +341,16 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ContactRoute: ContactRoute,
   DigitalMarketingRoute: DigitalMarketingRoute,
+  ApiSiteImagesRoute: ApiSiteImagesRoute,
+  ApiSocialLinksRoute: ApiSocialLinksRoute,
+  ApiUploadRoute: ApiUploadRoute,
   PortfolioSlugRoute: PortfolioSlugRoute,
   PortfolioIndexRoute: PortfolioIndexRoute,
+  ApiAdminLoginRoute: ApiAdminLoginRoute,
+  ApiAdminLogoutRoute: ApiAdminLogoutRoute,
+  ApiAdminVerifyRoute: ApiAdminVerifyRoute,
+  ApiProjectsIdRoute: ApiProjectsIdRoute,
+  ApiProjectsIndexRoute: ApiProjectsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -19,6 +19,8 @@ export function ProjectImageLightbox({
 }: ProjectImageLightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -79,6 +81,36 @@ export function ProjectImageLightbox({
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
+  // Touch Swipe Handlers for Mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.targetTouches[0]) {
+      touchStartX.current = e.targetTouches[0].clientX;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.targetTouches[0]) {
+      touchEndX.current = e.targetTouches[0].clientX;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 45;
+
+    if (distance > minSwipeDistance) {
+      // Swiped Left -> Next
+      goToNext();
+    } else if (distance < -minSwipeDistance) {
+      // Swiped Right -> Previous
+      goToPrevious();
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -87,11 +119,14 @@ export function ProjectImageLightbox({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-charcoal/95 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-charcoal/95 backdrop-blur-sm select-none"
           onClick={onClose}
           role="dialog"
           aria-modal="true"
           aria-label="Image lightbox"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
@@ -116,14 +151,14 @@ export function ProjectImageLightbox({
                 <button
                   onClick={goToPrevious}
                   aria-label="Previous image"
-                  className="absolute left-4 md:left-8 z-10 flex items-center justify-center w-12 h-12 text-ivory transition-colors hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold"
+                  className="absolute left-2 sm:left-4 md:left-8 z-10 flex items-center justify-center w-12 h-12 text-ivory transition-colors hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold"
                 >
                   <ChevronLeft size={32} />
                 </button>
                 <button
                   onClick={goToNext}
                   aria-label="Next image"
-                  className="absolute right-4 md:right-8 z-10 flex items-center justify-center w-12 h-12 text-ivory transition-colors hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold"
+                  className="absolute right-2 sm:right-4 md:right-8 z-10 flex items-center justify-center w-12 h-12 text-ivory transition-colors hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold"
                 >
                   <ChevronRight size={32} />
                 </button>
@@ -132,8 +167,8 @@ export function ProjectImageLightbox({
 
             <motion.img
               key={currentIndex}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
               src={images[currentIndex]}
               alt={altText[currentIndex] || `Image ${currentIndex + 1}`}

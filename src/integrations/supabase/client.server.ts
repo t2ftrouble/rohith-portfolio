@@ -42,9 +42,15 @@ function createSupabaseAdminClient() {
       ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
     ];
     const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
+    console.error(`[Supabase Admin] ${message}`);
+    console.error(`[Supabase Admin] Current env:`, {
+      SUPABASE_URL: SUPABASE_URL ? 'Set' : 'Not set',
+      SUPABASE_SERVICE_ROLE_KEY: SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not set',
+    });
     throw new Error(message);
   }
+
+  console.log(`[Supabase Admin] Using project: ${SUPABASE_URL}`);
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     global: {

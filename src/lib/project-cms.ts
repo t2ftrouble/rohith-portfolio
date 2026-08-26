@@ -1,5 +1,5 @@
 import type { Project } from "@/data/projects";
-import { projects as defaultProjects } from "@/data/projects";
+import { resolveImageUrl } from "./asset-resolver";
 
 export type ProjectFormData = {
   slug: string;
@@ -10,215 +10,178 @@ export type ProjectFormData = {
   description: string;
   process: string[];
   visuals: string;
-  image: string; // URL for cover image
+  image: string; // URL or path for cover image
   category: "FILMMAKING" | "VFX / CG" | "EDITING" | "DESIGN" | "CONTENT";
-  year?: string;
-  status?: string;
-  hasVideo?: boolean;
-  videoId?: string;
-  credits?: {
-    role: string;
-    name: string;
-  }[];
-  fullCredits?: string;
-  galleryImages?: string[]; // Array of image URLs
-  client?: string | null; // Optional client name
-  createdAt?: string | null; // ISO timestamp
-  posterImage?: string; // Poster image URL
-  showBeforeAfter?: boolean; // Whether to show before/after slider
-  beforeImage?: string; // Before image URL
-  afterImage?: string; // After image URL
+  year?: string | null | undefined;
+  status?: string | null | undefined;
+  hasVideo?: boolean | undefined;
+  videoId?: string | null | undefined;
+  credits?:
+    | {
+        role: string;
+        name: string;
+      }[]
+    | undefined;
+  fullCredits?: string | null | undefined;
+  galleryImages?: string[] | undefined; // Array of image URLs
+  client?: string | null | undefined;
+  createdAt?: string | null | undefined;
+  posterImage?: string | null | undefined; // Poster image URL
+  showBeforeAfter?: boolean | undefined; // Whether to show before/after slider
+  beforeImage?: string | null | undefined; // Before image URL
+  afterImage?: string | null | undefined; // After image URL
+  emotionalDescriptor?: string | null | undefined; // Short emotional tagline
+  whatIFelt?: string | null | undefined; // Personal creative note
 };
 
 export type ProjectCMSData = {
   id: string; // Unique ID for CRUD operations
 } & ProjectFormData;
 
-const STORAGE_KEY = "rohith-portfolio-projects";
-
-// Initialize localStorage with default projects if empty
-export function initializeProjects(): void {
-  if (typeof window === "undefined") return;
-
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
-    const initialProjects = defaultProjects.map((p) => ({
-      ...p,
-      id: p.slug,
-      galleryImages: [],
-      client: undefined,
-      createdAt: new Date().toISOString(),
-    }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(initialProjects));
-  }
-}
-
-// Get all projects from localStorage
-export function getProjects(): ProjectCMSData[] {
-  if (typeof window === "undefined") return [];
-
+// Get all projects from Supabase via API
+export async function getProjects(): Promise<ProjectCMSData[]> {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      initializeProjects();
-      return getProjects();
+    const response = await fetch("/api/projects");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+      console.error("Failed to fetch projects from API:", errorData);
+      throw new Error(errorData.error || "Failed to fetch projects");
     }
-    return JSON.parse(stored);
+    const data = await response.json();
+
+    if (!data.projects || !Array.isArray(data.projects)) {
+      console.error("Invalid response format from API:", data);
+      throw new Error("Invalid response format from API");
+    }
+
+    // Transform Supabase data to CMS format
+    return data.projects.map((p: any) => ({
+      id: p.id,
+      slug: p.slug,
+      number: p.number,
+      title: p.title,
+      type: p.type,
+      role: p.role,
+      year: p.year || "",
+      status: p.status || "",
+      description: p.description || "",
+      process: p.process || [],
+      visuals: p.visuals || "",
+      image: p.image || "",
+      category: p.category || "FILMMAKING",
+      hasVideo: Boolean(p.has_video),
+      videoId: p.video_id || "",
+      credits: [],
+      fullCredits: p.full_credits || "",
+      galleryImages: Array.isArray(p.gallery_images) ? p.gallery_images : [],
+      client: p.client || "",
+      createdAt: p.created_at,
+      posterImage: p.poster_image || "",
+      showBeforeAfter: Boolean(p.show_before_after),
+      beforeImage: p.before_image || "",
+      afterImage: p.after_image || "",
+      emotionalDescriptor: p.emotional_descriptor || "",
+      whatIFelt: p.what_i_felt || "",
+    }));
   } catch (error) {
-    console.error("Error loading projects from localStorage:", error);
-    return [];
+    console.error("Error loading projects from Supabase:", error);
+    throw new Error(error instanceof Error ? error.message : "Failed to load projects from database");
   }
 }
 
 // Get a single project by ID
-export function getProjectById(id: string): ProjectCMSData | undefined {
-  const projects = getProjects();
+export async function getProjectById(id: string): Promise<ProjectCMSData | undefined> {
+  const projects = await getProjects();
   return projects.find((p) => p.id === id);
 }
 
 // Add a new project
-export function addProject(project: ProjectFormData): ProjectCMSData {
-  const projects = getProjects();
-  const newProject: ProjectCMSData = {
-    id: project.slug || generateId(),
-    slug: project.slug,
-    number: project.number,
-    title: project.title,
-    type: project.type,
-    role: project.role,
-    description: project.description,
-    process: project.process,
-    visuals: project.visuals,
-    image: project.image,
-    category: project.category,
-    galleryImages: project.galleryImages || [],
-    client: project.client || null,
-    createdAt: new Date().toISOString(),
-  };
+export async function addProject(project: ProjectFormData): Promise<ProjectCMSData> {
+  const response = await fetch("/api/projects", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ project }),
+  });
 
-  // Add optional fields only if they exist
-  if (project.year) newProject.year = project.year;
-  if (project.status) newProject.status = project.status;
-  if (project.hasVideo !== undefined) newProject.hasVideo = project.hasVideo;
-  if (project.videoId) newProject.videoId = project.videoId;
-  if (project.credits) newProject.credits = project.credits;
-  if (project.fullCredits) newProject.fullCredits = project.fullCredits;
-  if (project.posterImage) newProject.posterImage = project.posterImage;
-  if (project.showBeforeAfter) newProject.showBeforeAfter = project.showBeforeAfter;
-  if (project.beforeImage) newProject.beforeImage = project.beforeImage;
-  if (project.afterImage) newProject.afterImage = project.afterImage;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Failed to create project" }));
+    throw new Error(errorData.error || "Failed to create project");
+  }
 
-  // Assign next number
-  const maxNumber = projects.reduce((max, p) => {
-    const num = parseInt(p.number, 10);
-    return num > max ? num : max;
-  }, 0);
-  newProject.number = String(maxNumber + 1).padStart(2, "0");
-
-  projects.push(newProject);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-  
-  // Dispatch custom event to notify other tabs/components
-  window.dispatchEvent(new Event("custom-project-update"));
-  
-  return newProject;
+  const data = await response.json();
+  return data.project;
 }
 
 // Update an existing project
-export function updateProject(id: string, updates: Partial<ProjectFormData>): ProjectCMSData | null {
-  const projects = getProjects();
-  const index = projects.findIndex((p) => p.id === id);
+export async function updateProject(id: string, updates: Partial<ProjectFormData>): Promise<ProjectCMSData> {
+  const response = await fetch(`/api/projects/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ project: updates }),
+  });
 
-  if (index === -1) return null;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Failed to update project" }));
+    throw new Error(errorData.error || "Failed to update project");
+  }
 
-  const existing = projects[index];
-  if (!existing) return null;
-
-  const updatedProject: ProjectCMSData = {
-    id,
-    slug: updates.slug || existing.slug,
-    number: updates.number || existing.number,
-    title: updates.title || existing.title,
-    type: updates.type || existing.type,
-    role: updates.role || existing.role,
-    description: updates.description || existing.description,
-    process: updates.process || existing.process,
-    visuals: updates.visuals || existing.visuals,
-    image: updates.image || existing.image,
-    category: updates.category || existing.category,
-    galleryImages: updates.galleryImages !== undefined ? updates.galleryImages : (existing.galleryImages || []),
-    client: updates.client !== undefined ? updates.client : (existing.client || null),
-    createdAt: existing.createdAt || null,
-  };
-
-  // Handle optional fields
-  if (updates.year !== undefined) updatedProject.year = updates.year;
-  else if (existing.year) updatedProject.year = existing.year;
-
-  if (updates.status !== undefined) updatedProject.status = updates.status;
-  else if (existing.status) updatedProject.status = existing.status;
-
-  if (updates.hasVideo !== undefined) updatedProject.hasVideo = updates.hasVideo;
-  else if (existing.hasVideo !== undefined) updatedProject.hasVideo = existing.hasVideo;
-
-  if (updates.videoId !== undefined) updatedProject.videoId = updates.videoId;
-  else if (existing.videoId) updatedProject.videoId = existing.videoId;
-
-  if (updates.credits !== undefined) updatedProject.credits = updates.credits;
-  else if (existing.credits) updatedProject.credits = existing.credits;
-
-  if (updates.fullCredits !== undefined) updatedProject.fullCredits = updates.fullCredits;
-  else if (existing.fullCredits) updatedProject.fullCredits = existing.fullCredits;
-
-  if (updates.posterImage !== undefined) updatedProject.posterImage = updates.posterImage;
-  else if (existing.posterImage) updatedProject.posterImage = existing.posterImage;
-
-  if (updates.showBeforeAfter !== undefined) updatedProject.showBeforeAfter = updates.showBeforeAfter;
-  else if (existing.showBeforeAfter) updatedProject.showBeforeAfter = existing.showBeforeAfter;
-
-  if (updates.beforeImage !== undefined) updatedProject.beforeImage = updates.beforeImage;
-  else if (existing.beforeImage) updatedProject.beforeImage = existing.beforeImage;
-
-  if (updates.afterImage !== undefined) updatedProject.afterImage = updates.afterImage;
-  else if (existing.afterImage) updatedProject.afterImage = existing.afterImage;
-
-  projects[index] = updatedProject;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-  
-  // Dispatch custom event to notify other tabs/components
-  window.dispatchEvent(new Event("custom-project-update"));
-  
-  return updatedProject;
+  const data = await response.json();
+  return data.project;
 }
 
 // Delete a project
-export function deleteProject(id: string): boolean {
-  const projects = getProjects();
-  const filtered = projects.filter((p) => p.id !== id);
+export async function deleteProject(id: string): Promise<boolean> {
+  const response = await fetch(`/api/projects/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
 
-  if (filtered.length === projects.length) return false;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Failed to delete project" }));
+    throw new Error(errorData.error || "Failed to delete project");
+  }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-  
-  // Dispatch custom event to notify other tabs/components
-  window.dispatchEvent(new Event("custom-project-update"));
-  
-  return true;
+  const data = await response.json();
+  return data.success;
 }
 
-// Generate a unique ID
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-// Convert CMS data to Project type for use in existing components
+// Convert CMS data to Project type for use in display components
 export function cmsToProject(cms: ProjectCMSData): Project {
-  const { id, galleryImages, client, createdAt, ...project } = cms;
-  return project;
+  return {
+    slug: cms.slug,
+    number: cms.number,
+    title: cms.title,
+    type: cms.type,
+    role: cms.role,
+    year: cms.year ? cms.year : undefined,
+    status: cms.status ? cms.status : undefined,
+    description: cms.description,
+    process: cms.process,
+    visuals: cms.visuals,
+    image: resolveImageUrl(cms.image),
+    category: cms.category,
+    hasVideo: cms.hasVideo,
+    videoId: cms.videoId ? cms.videoId : undefined,
+    fullCredits: cms.fullCredits ? cms.fullCredits : undefined,
+    posterImage: cms.posterImage ? resolveImageUrl(cms.posterImage) : undefined,
+    showBeforeAfter: cms.showBeforeAfter,
+    beforeImage: cms.beforeImage ? resolveImageUrl(cms.beforeImage) : undefined,
+    afterImage: cms.afterImage ? resolveImageUrl(cms.afterImage) : undefined,
+    galleryImages: cms.galleryImages ? cms.galleryImages.map(resolveImageUrl) : undefined,
+    client: cms.client ? cms.client : undefined,
+    emotionalDescriptor: cms.emotionalDescriptor ? cms.emotionalDescriptor : undefined,
+    whatIFelt: cms.whatIFelt ? cms.whatIFelt : undefined,
+  };
 }
 
-// Get projects as Project array for existing components
-export function getProjectsForDisplay(): Project[] {
-  const cmsProjects = getProjects();
+// Get projects as Project array for display components
+export async function getProjectsForDisplay(): Promise<Project[]> {
+  const cmsProjects = await getProjects();
   return cmsProjects.map(cmsToProject);
 }

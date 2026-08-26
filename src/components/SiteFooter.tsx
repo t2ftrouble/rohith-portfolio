@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { SocialLinks } from "@/components/SocialLinks";
 
 export function SiteFooter() {
   return (
@@ -9,31 +10,35 @@ export function SiteFooter() {
           <p className="title-card mt-4 text-3xl text-ivory md:text-5xl">Rohith V</p>
           <p className="label-track mt-3">Chennai, Tamil Nadu, India</p>
         </div>
-        <div className="flex flex-col gap-3 text-sm text-muted-foreground">
+        <div className="flex flex-col gap-2.5 text-sm text-muted-foreground">
           <a
             href="mailto:t2frohithyt@gmail.com"
-            data-cursor="text"
-            className="transition-colors hover:text-gold"
+            data-cursor="copy email"
+            data-magnetic="true"
+            className="transition-colors hover:text-gold py-0.5 min-h-[32px] flex items-center"
           >
             t2frohithyt@gmail.com
           </a>
           <a
             href="tel:+917200173240"
-            data-cursor="text"
-            className="transition-colors hover:text-gold"
+            data-cursor="call"
+            data-magnetic="true"
+            className="transition-colors hover:text-gold py-0.5 min-h-[32px] flex items-center"
           >
             +91 72001 73240
           </a>
-          <a
-            href="https://instagram.com/trouble_rohii"
-            target="_blank"
-            rel="noreferrer"
-            data-cursor="text"
-            className="transition-colors hover:text-gold"
+          
+          {/* Dynamic 3 Social Media Channels */}
+          <div className="pt-2">
+            <SocialLinks variant="footer" />
+          </div>
+
+          <Link
+            to="/contact"
+            data-cursor="contact →"
+            data-magnetic="true"
+            className="label-track mt-2 !text-gold py-1 min-h-[36px] inline-flex items-center"
           >
-            @TROUBLE_ROHII
-          </a>
-          <Link to="/contact" data-cursor="enter →" className="label-track mt-2 !text-gold">
             Start a conversation →
           </Link>
         </div>

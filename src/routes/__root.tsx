@@ -4,30 +4,42 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { motion, useScroll, useSpring } from "motion/react";
+import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CinematicCursor } from "@/components/CinematicCursor";
+import { CinematicClosing } from "@/components/CinematicClosing";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <p className="label-track text-gold">Reel missing</p>
-        <h1 className="title-card mt-6 text-6xl text-ivory">404</h1>
-        <p className="mt-4 text-sm text-muted-foreground">
-          This frame was left on the cutting room floor.
+    <div className="flex min-h-screen items-center justify-center bg-charcoal px-6 relative overflow-hidden">
+      <div className="vignette pointer-events-none" />
+      <div className="scanlines absolute inset-0 opacity-20 pointer-events-none" />
+      
+      <div className="max-w-lg text-center relative z-10 border border-border/80 bg-navy/30 p-10 md:p-14 shadow-2xl backdrop-blur-md">
+        <p className="label-track text-gold">404 — SCENE NOT FOUND</p>
+        <h1 className="title-card mt-6 text-3xl sm:text-5xl text-ivory leading-tight">
+          THIS FRAME DOESN'T EXIST.
+        </h1>
+        <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+          This cut was left on the cutting room floor or moved to another reel.
         </p>
-        <div className="mt-8">
-          <Link to="/" className="label-track !text-gold">
-            Back to the opening →
+        <div className="mt-10">
+          <Link
+            to="/"
+            data-cursor="home →"
+            data-magnetic="true"
+            className="label-track inline-block bg-gold px-8 py-4 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-all shadow-lg"
+          >
+            → BACK TO THE FILM
           </Link>
         </div>
       </div>
@@ -127,6 +139,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { scrollYProgress } = useScroll();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
@@ -137,13 +150,24 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <div className="relative min-h-screen bg-charcoal">
         <motion.div
-          className="fixed top-0 left-0 right-0 z-[55] h-[2px] bg-gold/60 origin-left"
+          className="fixed top-0 left-0 right-0 z-[60] h-[2px] bg-gold/60 origin-left pointer-events-none"
           style={{ scaleX }}
         />
         <SiteNav />
         <main>
-          <Outlet />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, filter: "brightness(0.85)" }}
+              animate={{ opacity: 1, filter: "brightness(1)" }}
+              exit={{ opacity: 0, filter: "brightness(0.85)" }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
+        <CinematicClosing />
         <SiteFooter />
         <CinematicCursor />
         <div className="film-grain" aria-hidden />

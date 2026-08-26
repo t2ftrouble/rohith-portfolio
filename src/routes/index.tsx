@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   Eye,
   Heart,
@@ -25,11 +25,14 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import heroImage from "@/assets/hero-street.webp";
-import { projects } from "@/data/projects";
+import { getProjects, defaultProjects, type Project } from "@/data/projects";
 import { OpeningTitles } from "@/components/OpeningTitles";
 import { ProjectChapter } from "@/components/ProjectChapter";
 import { Reveal } from "@/components/Reveal";
+import { FocusReveal } from "@/components/FocusReveal";
 import { Stage } from "@/components/three/Stage";
+import { FilmmakingStatement } from "@/components/FilmmakingStatement";
+import { getSiteImages, type SiteImagesData } from "@/lib/site-images";
 
 import premiereProLogo from "@/assets/logo/premier pro.webp";
 import afterEffectsLogo from "@/assets/logo/after effect.webp";
@@ -41,6 +44,14 @@ import nukeLogo from "@/assets/logo/nuke.webp";
 import pftrackLogo from "@/assets/logo/pf track.webp";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    try {
+      const dynamicProjects = await getProjects();
+      return { projects: dynamicProjects };
+    } catch {
+      return { projects: defaultProjects };
+    }
+  },
   head: () => ({
     meta: [
       { title: "Rohith V | Filmmaker | Writer | Editor | VFX/CG Artist" },
@@ -65,77 +76,108 @@ export const Route = createFileRoute("/")({
 
 const philosophy = [
   {
+    step: "01",
     word: "SEE",
-    text: "Every frame begins with how we see — composition, light, movement and visual detail.",
-    icon: Eye as LucideIcon,
+    subtitle: "Visual Composition & Light",
+    text: "Every frame begins with how we see — deliberate composition, lighting depth, spatial blocking and intentional camera movement.",
   },
   {
+    step: "02",
     word: "FEEL",
-    text: "A story should make you feel before it makes you think — emotion, atmosphere and performance give the image its meaning.",
-    icon: Heart as LucideIcon,
+    subtitle: "Atmosphere & Emotional Weight",
+    text: "A film must make you feel before it makes you think — performance, tone and sonic atmosphere give the visual its soul.",
   },
   {
+    step: "03",
     word: "TELL",
-    text: "Every cut has something to say — story, rhythm and editing turn individual moments into a film.",
-    icon: MessageSquare as LucideIcon,
+    subtitle: "Pacing & Narrative Truth",
+    text: "Cinema is narrative honesty — pacing, restraint and moments that stay with the audience long after the screen goes black.",
   },
 ];
 
 const skills = [
   {
-    title: "Direction",
-    items: [
-      "Assistant Direction",
-      "Direction",
-      "Story Development",
-      "Shot Planning",
-      "Scene Composition",
-    ],
+    title: "Filmmaking & Direction",
+    description: "Visual storytelling, shot composition, blocking and scene execution.",
+    icon: Camera as LucideIcon,
+    accent: "01",
   },
   {
-    title: "Writing",
-    items: ["Script", "Screenplay", "Story Development", "Narrative Planning"],
+    title: "Screenplay & Writing",
+    description: "Story structure, character arcs, dialogue writing and scene pacing.",
+    icon: FileText as LucideIcon,
+    accent: "02",
   },
   {
-    title: "Post-Production",
-    items: [
-      "Film Editing",
-      "Video Editing",
-      "VFX",
-      "CG",
-      "Compositing",
-      "Color Correction / Grading",
-    ],
+    title: "Editing & Post-Production",
+    description: "Rhythm, continuity editing, pacing and sound-image alignment.",
+    icon: Edit as LucideIcon,
+    accent: "03",
   },
   {
-    title: "Digital Media",
-    items: [
-      "Digital Marketing",
-      "Content Strategy",
-      "Social Media",
-      "Digital Branding",
-      "Personal Branding",
-    ],
+    title: "VFX & CGI Support",
+    description: "Matchmoving, object integration, CGI contribution and visual finishing.",
+    icon: Film as LucideIcon,
+    accent: "04",
   },
 ];
 
-const tools = [
+const digitalMarketingSkills = [
+  {
+    title: "Brand Strategy & Positioning",
+    description: "Defining your brand's unique voice, target audience, and market position.",
+    icon: Target as LucideIcon,
+    accent: "01",
+  },
+  {
+    title: "Content Marketing & Social Media",
+    description: "Creating engaging content that builds community, drives reach, and converts.",
+    icon: Megaphone as LucideIcon,
+    accent: "02",
+  },
+  {
+    title: "Performance Marketing (Meta & Google Ads)",
+    description: "Data-driven ad campaigns optimized for ROI, lead generation, and sales.",
+    icon: TrendingUp as LucideIcon,
+    accent: "03",
+  },
+  {
+    title: "Personal Branding & Executive Presence",
+    description: "Transforming founders and creators into recognized industry authorities.",
+    icon: Users as LucideIcon,
+    accent: "04",
+  },
+  {
+    title: "Analytics & Growth Optimization",
+    description: "Tracking KPIs, analyzing funnel metrics, and scaling what works.",
+    icon: BarChart3 as LucideIcon,
+    accent: "05",
+  },
+  {
+    title: "Creative Direction for Digital Ads",
+    description: "High-converting visual concepts, hooks, and video ad creatives that stop the scroll.",
+    icon: Lightbulb as LucideIcon,
+    accent: "06",
+  },
+];
+
+const software = [
   {
     name: "Premiere Pro",
-    use: "Video Editing",
-    desc: "Used for editing short films, reels and narrative projects.",
+    use: "Editing",
+    desc: "Used for narrative editing, timeline assembly and pacing.",
     logo: premiereProLogo,
   },
   {
     name: "After Effects",
     use: "Motion & VFX",
-    desc: "Used for compositing, motion graphics and visual effects.",
+    desc: "Used for motion graphics, VFX compositing and visual enhancements.",
     logo: afterEffectsLogo,
   },
   {
     name: "Photoshop",
-    use: "Image & Design",
-    desc: "Used for posters, thumbnails, image manipulation and visual development.",
+    use: "Visual Design",
+    desc: "Used for poster design, concept art and texture work.",
     logo: photoshopLogo,
   },
   {
@@ -173,82 +215,109 @@ const tools = [
 function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const [heroBg, setHeroBg] = useState<string>(heroImage);
+
+  useEffect(() => {
+    getSiteImages().then((imgs) => {
+      if (imgs.heroImage) setHeroBg(imgs.heroImage);
+    }).catch(() => {});
+
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<SiteImagesData>;
+      if (customEvent.detail?.heroImage) setHeroBg(customEvent.detail.heroImage);
+    };
+
+    window.addEventListener("site-images-updated", handleUpdate);
+    return () => window.removeEventListener("site-images-updated", handleUpdate);
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
   });
-  const imgY = useTransform(scrollYProgress, [0, 1], ["0%", isMobile ? "5%" : "18%"]);
-  const imgScale = useTransform(scrollYProgress, [0, 1], [1.06, isMobile ? 1.08 : 1.16]);
-  const textY = useTransform(scrollYProgress, [0, 1], ["0%", isMobile ? "15%" : "40%"]);
-  const fade = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
+  const imgY = useTransform(scrollYProgress, [0, 1], ["0%", isMobile ? "12%" : "25%"]);
+  const imgScale = useTransform(scrollYProgress, [0, 1], [1, isMobile ? 1.04 : 1.1]);
+  const textY = useTransform(scrollYProgress, [0, 1], ["0%", isMobile ? "20%" : "40%"]);
+  const fade = useTransform(scrollYProgress, [0, isMobile ? 0.6 : 0.8], [1, 0]);
 
   return (
     <section
       ref={ref}
-      className="relative flex flex-col min-h-[100svh] items-center justify-center overflow-hidden md:justify-end md:pb-[15vh]"
+      className="relative flex min-h-[100svh] items-end overflow-hidden pb-12 pt-28 md:pb-24 md:pt-36"
     >
+      {/* Background with continuous subtle lens breathing */}
       <motion.img
-        src={heroImage}
+        src={heroBg}
         alt="Rain-lit Chennai street at night — cinematic backdrop"
         width={1600}
         height={1008}
         style={{ y: imgY, scale: imgScale }}
-        className="absolute inset-0 h-full w-full object-cover opacity-70"
+        className="hero-lens-breathe absolute inset-0 h-full w-full object-cover opacity-75"
       />
+      
+      {/* Cinematic dark gradients */}
       <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/50 to-charcoal/70" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_60%,rgba(201,164,76,0.08)_0%,transparent_60%)] pointer-events-none" />
+      
+      {/* Ambient anamorphic light drift */}
+      <div className="anamorphic-drift absolute inset-0 bg-gradient-to-r from-transparent via-gold/10 to-transparent pointer-events-none" />
       <div className="vignette" />
 
       <motion.div
         style={{ y: textY, opacity: fade }}
-        className="relative mx-auto w-full max-w-[1400px] px-4 pb-20 md:px-12 md:pb-28 text-center md:text-left md:w-[85%] md:ml-[12%]"
+        className="relative mx-auto w-full max-w-[1400px] px-5 pb-8 md:px-12 md:pb-24 text-center md:text-left md:w-[85%] md:ml-[12%]"
       >
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 1.2 }}
-          className="label-track text-gold"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 1.0 }}
+          className="label-track text-gold !text-[10px] md:!text-[11px]"
         >
           A film by
         </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 1.3, ease: [0.16, 1, 0.3, 1] }}
-          className="title-card mt-4 text-[clamp(2.5rem,12vw,9.2rem)] leading-[0.9] text-ivory"
-        >
-          Rohith V
-        </motion.h1>
+        
+        <FocusReveal delay={0.35}>
+          <h1 className="title-card mt-3 text-[clamp(2.5rem,10vw,8.8rem)] leading-[0.9] text-ivory drop-shadow-sm text-balance">
+            Rohith V
+          </h1>
+        </FocusReveal>
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 1.2 }}
-          className="mt-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
+          transition={{ delay: 0.7, duration: 1.0 }}
+          className="mt-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
         >
           <div className="text-center md:text-left">
             <p className="label-track !text-[clamp(0.75rem,2vw,0.875rem)] !tracking-[0.5em] text-ivory">
               Filmmaker
             </p>
-            <p className="label-track mt-4 !text-[clamp(0.6rem,1.8vw,0.625rem)] text-gold">
+            <p className="label-track mt-3 !text-[clamp(0.6rem,1.8vw,0.625rem)] text-gold">
               Writer • Editor • VFX / CG Artist
             </p>
           </div>
-          <div className="flex flex-col gap-3 md:flex-row w-full md:w-auto">
-            <motion.div whileTap={{ scale: 0.97 }}>
+          
+          {/* Mobile responsive button pair (stays neatly inside viewport) */}
+          <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-row w-full sm:w-auto mt-2 sm:mt-0">
+            <motion.div whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
               <Link
                 to="/portfolio"
-                data-cursor="enter →"
-                className="label-track bg-gold px-6 py-4 !text-[10px] !text-charcoal transition-colors hover:bg-gold/90 min-h-[44px] text-center"
+                data-cursor="view work →"
+                data-magnetic="true"
+                className="label-track w-full bg-gold px-5 py-3.5 sm:px-6 sm:py-4 !text-[9px] sm:!text-[10px] !text-charcoal transition-all hover:bg-gold/90 min-h-[44px] text-center inline-flex items-center justify-center shadow-md font-bold"
               >
-                VIEW MY WORK →
+                VIEW WORK →
               </Link>
             </motion.div>
-            <motion.div whileTap={{ scale: 0.97 }}>
+            <motion.div whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
               <Link
                 to="/contact"
-                data-cursor="enter →"
-                className="label-track border border-gold/60 px-4 py-4 !text-[10px] !text-gold transition-colors hover:border-gold min-h-[44px] text-center"
+                data-cursor="contact →"
+                data-magnetic="true"
+                className="label-track w-full border border-gold/60 px-4 py-3.5 sm:px-5 sm:py-4 !text-[9px] sm:!text-[10px] !text-gold transition-all hover:border-gold hover:bg-gold/10 min-h-[44px] text-center inline-flex items-center justify-center"
               >
-                START A PROJECT →
+                START PROJECT →
               </Link>
             </motion.div>
           </div>
@@ -259,7 +328,19 @@ function Hero() {
 }
 
 function Home() {
+  const loaderData = Route.useLoaderData();
   const [activeSkillTab, setActiveSkillTab] = useState(0);
+  const [homeProjects, setHomeProjects] = useState<Project[]>(
+    loaderData?.projects && loaderData.projects.length > 0 ? loaderData.projects : defaultProjects
+  );
+
+  useEffect(() => {
+    getProjects()
+      .then((data) => {
+        if (data && data.length > 0) setHomeProjects(data);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <>
@@ -269,14 +350,14 @@ function Home() {
       {/* THE FILMMAKER */}
       <section className="relative mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-36">
         <div className="grid gap-12 md:grid-cols-12 grid-cols-1">
-          <Reveal className="md:col-span-4">
+          <FocusReveal className="md:col-span-4">
             <p className="label-track text-gold">01 — Profile</p>
             <h2 className="title-card mt-5 text-4xl text-ivory md:text-6xl">
               The
               <br />
               Filmmaker
             </h2>
-          </Reveal>
+          </FocusReveal>
           <div className="md:col-span-7 md:col-start-6 col-span-1">
             <Reveal delay={0.1}>
               <p className="text-lg leading-relaxed text-ivory/85 md:text-2xl">
@@ -305,6 +386,8 @@ function Home() {
         </div>
       </section>
 
+      <FilmmakingStatement />
+
       {/* SELECTED WORK */}
       <section className="relative border-t border-border bg-charcoal">
         <Stage
@@ -312,56 +395,58 @@ function Home() {
           className="pointer-events-none absolute left-[-14%] top-[16%] hidden h-[46vh] w-[46vh] opacity-30 lg:block"
         />
         <div className="relative mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-32">
-          <Reveal>
+          <FocusReveal>
             <p className="label-track text-gold">02 — Chapters</p>
             <h2 className="title-card mt-5 text-5xl text-ivory md:text-8xl">Selected Work</h2>
-          </Reveal>
+          </FocusReveal>
           <div className="mt-16">
-            {projects.map((p, i) => (
+            {homeProjects.map((p, i) => (
               <ProjectChapter key={p.slug} project={p} index={i} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* PHILOSOPHY */}
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-[1600px] px-4 py-24 md:px-12 md:py-36">
-          <Reveal>
+      {/* PHILOSOPHY — SEE → FEEL → TELL (Cinematic Right-to-Left Transition) */}
+      <section className="border-t border-border bg-charcoal relative overflow-hidden">
+        <div className="mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-36">
+          <FocusReveal>
             <p className="label-track text-gold">03 — Philosophy</p>
-          </Reveal>
-          <div className="mt-14 space-y-7 md:space-y-24">
+            <h2 className="title-card mt-4 text-3xl sm:text-5xl md:text-6xl text-ivory">
+              The Director's Tenets
+            </h2>
+          </FocusReveal>
+
+          <div className="mt-16 md:mt-24 space-y-16 md:space-y-24">
             {philosophy.map((p, i) => (
               <motion.div
                 key={p.word}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-120px" }}
-                transition={{
-                  duration: 0.6,
-                  delay: i * 0.1,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                whileTap={{ scale: 0.99 }}
-                className="group relative border-b border-border pb-7 md:pb-16"
+                initial={{ opacity: 0, x: 70, filter: "blur(8px)" }}
+                whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.85, delay: i * 0.15, ease: [0.16, 1, 0.3, 1] }}
+                className="group border-b border-border/70 pb-12 md:pb-20 relative"
               >
-                <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:gap-6 md:items-center">
-                  <div className="md:col-span-7 flex flex-col gap-3">
-                    <div className="flex items-center gap-4">
-                      <motion.div whileTap={{ scale: 0.9 }}>
-                        <p.icon className="h-8 w-8 text-gold opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity" />
-                      </motion.div>
-                      <h3 className="title-card text-[clamp(3rem,13vw,5rem)] leading-[0.85] text-ivory md:text-[9vw]">
-                        {p.word}
-                      </h3>
-                    </div>
-                    <p className="text-[15px] leading-[1.5] text-muted-foreground md:hidden opacity-80 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
-                      {p.text}
-                    </p>
-                    <div className="absolute bottom-0 left-0 h-px w-0 bg-gold group-hover:w-full group-active:w-full transition-all duration-500" />
+                {/* Subtle Gold Accent Underline */}
+                <div className="gold-rule mb-8 opacity-40 group-hover:opacity-100 transition-opacity duration-500" />
+
+                <div className="grid gap-6 md:grid-cols-12 md:items-baseline">
+                  {/* Step & Large Premium Word */}
+                  <div className="md:col-span-5 flex items-baseline gap-4 sm:gap-6">
+                    <span className="label-track !text-xs sm:!text-sm text-gold/80 font-mono">
+                      {p.step}
+                    </span>
+                    <h3 className="title-card text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-ivory group-hover:text-gold transition-colors duration-500 tracking-tight">
+                      {p.word}
+                    </h3>
                   </div>
-                  <div className="md:col-span-4 md:col-start-9 hidden md:block">
-                    <p className="text-lg text-muted-foreground opacity-80 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
+
+                  {/* Subtitle & Concise Description */}
+                  <div className="md:col-span-7 md:col-start-6">
+                    <p className="label-track text-gold/90 mb-3 !tracking-[0.3em]">
+                      {p.subtitle}
+                    </p>
+                    <p className="text-base sm:text-lg md:text-2xl text-ivory/80 leading-relaxed max-w-2xl font-light">
                       {p.text}
                     </p>
                   </div>
@@ -372,285 +457,174 @@ function Home() {
         </div>
       </section>
 
-      {/* SERVICES */}
-      <section className="border-t border-border bg-navy/30">
-        <div className="mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-32">
-          <Reveal>
-            <p className="label-track text-gold">04 — Services</p>
-            <h2 className="title-card mt-5 text-4xl text-ivory md:text-6xl">What I Do</h2>
-          </Reveal>
-          <div className="mt-14 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                num: "01",
-                title: "FILMMAKING",
-                description: "Direction, story development, shot planning and scene composition.",
-                icon: Film,
-              },
-              {
-                num: "02",
-                title: "WRITING",
-                description: "Script, screenplay, story development and narrative planning.",
-                icon: PenTool,
-              },
-              {
-                num: "03",
-                title: "EDITING",
-                description: "Film and video editing, color correction and grading.",
-                icon: Scissors,
-              },
-              {
-                num: "04",
-                title: "VFX / CG",
-                description: "Visual effects, CG, compositing and camera tracking.",
-                icon: Edit,
-              },
-              {
-                num: "05",
-                title: "CONTENT",
-                description: "Content creation, social media and digital content strategy.",
-                icon: Users,
-              },
-              {
-                num: "06",
-                title: "DIGITAL MARKETING",
-                description: "Content strategy, social media, Meta Ads and Google Ads.",
-                icon: BarChart3,
-              },
-            ].map((service, i) => (
-              <Reveal key={service.num} delay={i * 0.06}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{
-                    duration: 0.5,
-                    delay: i * 0.06,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  whileHover={{ y: -4, borderColor: "rgba(201, 164, 76, 0.4)" }}
-                  whileTap={{ scale: 0.98 }}
-                  className="border border-border p-6 h-full flex flex-col transition-colors group"
-                >
-                  <div className="flex items-start justify-between">
-                    <p className="title-card text-2xl text-gold/40">{service.num}</p>
-                    <motion.div
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      whileTap={{ scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <service.icon className="h-8 w-8 text-gold" />
-                    </motion.div>
-                  </div>
-                  <h3 className="title-card mt-4 text-lg text-ivory md:text-xl">{service.title}</h3>
-                  <p className="mt-3 text-sm text-muted-foreground md:text-base flex-1">
-                    {service.description}
-                  </p>
-                  <motion.div
-                    initial={{ x: 0 }}
-                    whileHover={{ x: 4 }}
-                    whileTap={{ x: 2 }}
-                    className="mt-4 pt-4 border-t border-border/50"
-                  >
-                    <ArrowRight className="h-4 w-4 text-gold" />
-                  </motion.div>
-                </motion.div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SKILLS */}
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-32">
-          <Reveal>
-            <p className="label-track text-gold">05 — Craft</p>
-            <h2 className="title-card mt-5 text-4xl text-ivory md:text-6xl">Skills</h2>
-          </Reveal>
-          <div className="mt-14">
-            {/* Tab Navigation */}
-            <div className="flex flex-wrap gap-2 border-b border-border pb-4 w-full">
-              {skills.map((group, i) => (
-                <motion.button
-                  key={group.title}
-                  onClick={() => setActiveSkillTab(i)}
-                  data-cursor="text"
-                  whileTap={{ scale: 0.97 }}
-                  className={`label-track px-4 py-2 !text-[10px] transition-colors flex-shrink-0 ${
-                    activeSkillTab === i
-                      ? "text-gold border-b border-gold"
-                      : "text-muted-foreground hover:text-ivory"
-                  }`}
-                >
-                  {group.title}
-                </motion.button>
-              ))}
+      {/* SKILLS & CRAFT SECTION */}
+      <section className="border-t border-border bg-charcoal/50">
+        <div className="mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-36">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pb-12 border-b border-border/60">
+            <div>
+              <p className="label-track text-gold">04 — Craft & Capabilities</p>
+              <h2 className="title-card mt-4 text-4xl text-ivory md:text-7xl">Skill Set</h2>
             </div>
-            {/* Tab Content */}
-            <motion.div
-              key={activeSkillTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mt-8"
-            >
-              <h3 className="title-card text-2xl text-ivory md:text-3xl">
-                {skills[activeSkillTab]?.title}
-              </h3>
-              <ul className="mt-6 grid gap-3 grid-cols-1 md:grid-cols-2">
-                {skills[activeSkillTab]?.items.map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-center gap-3 text-base text-ivory/80 md:text-lg"
-                  >
-                    <div className="h-1 w-1 bg-gold" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          </div>
-        </div>
-      </section>
 
-      {/* TOOLS */}
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-32">
-          <Reveal>
-            <p className="label-track text-gold">06 — Toolkit</p>
-            <h2 className="title-card mt-5 text-4xl text-ivory md:text-6xl">Tools I Use</h2>
-          </Reveal>
-          <div className="mt-14 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-            {tools.map((tool, i) => (
-              <Reveal key={tool.name} delay={i * 0.06}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{
-                    duration: 0.5,
-                    delay: i * 0.06,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  whileHover={{ y: -4, borderColor: "rgba(201, 164, 76, 0.4)" }}
-                  whileTap={{ scale: 0.98 }}
-                  className="border border-border p-6 h-full flex flex-col transition-colors"
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="mb-4 flex items-center justify-center h-16 md:h-20"
-                  >
-                    <img
-                      src={tool.logo}
-                      alt={tool.name}
-                      className="h-14 w-14 md:h-[72px] md:w-[72px] object-contain"
-                    />
-                  </motion.div>
-                  <h3 className="title-card text-lg text-ivory md:text-xl">{tool.name}</h3>
-                  <p className="label-track mt-2 !text-[8px] text-gold">{tool.use}</p>
-                  <p className="mt-3 text-sm text-muted-foreground md:text-base flex-1">
-                    {tool.desc}
-                  </p>
-                </motion.div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* EDUCATION */}
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-[1600px] px-6 py-20 md:px-12 md:py-28">
-          <Reveal>
-            <p className="label-track text-gold">06 — Education</p>
-          </Reveal>
-          <div className="mt-10 grid gap-8 grid-cols-1 md:grid-cols-2">
-            <Reveal>
-              <div className="border-l border-gold/40 pl-6">
-                <h3 className="title-card text-xl text-ivory md:text-2xl">
-                  B.Sc. Visual Communication
-                </h3>
-                <p className="label-track mt-3">VISTAS</p>
-                <p className="label-track mt-1 !tracking-[0.3em] text-gold">2024 – 2027</p>
-              </div>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <div className="border-l border-gold/40 pl-6">
-                <h3 className="title-card text-xl text-ivory md:text-2xl">
-                  Diploma in Visual Effects
-                </h3>
-                <p className="label-track mt-3">
-                  Anipix Animation Academy — Academic Partner, Vels University
-                </p>
-                <p className="label-track mt-1 !tracking-[0.3em] text-gold">2022 – 2025</p>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* SELECTED CREDITS */}
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-[1600px] px-6 py-20 md:px-12 md:py-28">
-          <Reveal>
-            <p className="label-track text-gold">07 — Selected Credits</p>
-          </Reveal>
-          <div className="mt-10 space-y-6">
-            <Reveal delay={0.1}>
-              <div className="flex flex-col gap-2 border-b border-border pb-4 md:flex-row md:items-baseline md:justify-between">
-                <h3 className="title-card text-xl text-ivory md:text-2xl">ONE LAST DAY</h3>
-                <p className="label-track text-gold">Story / Screenplay / Director / Editor / DI</p>
-              </div>
-            </Reveal>
-            <Reveal delay={0.2}>
-              <div className="flex flex-col gap-2 border-b border-border pb-4 md:flex-row md:items-baseline md:justify-between">
-                <h3 className="title-card text-xl text-ivory md:text-2xl">TOOTHPASTE</h3>
-                <p className="label-track text-gold">Story / Direction / Editing</p>
-              </div>
-            </Reveal>
-            <Reveal delay={0.3}>
-              <div className="flex flex-col gap-2 border-b border-border pb-4 md:flex-row md:items-baseline md:justify-between">
-                <h3 className="title-card text-xl text-ivory md:text-2xl">KADALAR</h3>
-                <p className="label-track text-gold">CG Artist</p>
-              </div>
-            </Reveal>
-            <Reveal delay={0.4}>
-              <div className="flex flex-col gap-2 border-b border-border pb-4 md:flex-row md:items-baseline md:justify-between">
-                <h3 className="title-card text-xl text-ivory md:text-2xl">RADHAL</h3>
-                <p className="label-track text-gold">Assistant Writer / Script & Screenplay</p>
-              </div>
-            </Reveal>
-            <Reveal delay={0.4}>
-              <div className="flex flex-col gap-2 border-b border-border pb-4 md:flex-row md:items-baseline md:justify-between">
-                <h3 className="title-card text-xl text-ivory md:text-2xl">RADHAL</h3>
-                <p className="label-track text-gold">Assistant Writer / Script & Screenplay</p>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="relative border-t border-border">
-        <div className="mx-auto max-w-[1600px] px-6 py-28 md:px-12 md:py-40">
-          <Reveal>
-            <p className="label-track text-gold">08 — Contact</p>
-            <h2 className="title-card mt-5 text-[clamp(2rem,10vw,6rem)] leading-[0.9] text-ivory">
-              Let&apos;s Create Something.
-            </h2>
-            <div className="mt-12">
-              <Link
-                to="/contact"
-                data-cursor="enter →"
-                className="label-track bg-gold px-8 py-5 !text-[10px] !text-charcoal transition-colors hover:bg-gold/90 min-h-[44px]"
+            {/* TAB SELECTOR */}
+            <div className="flex gap-2 p-1 bg-navy/40 border border-border self-start md:self-auto">
+              <button
+                onClick={() => setActiveSkillTab(0)}
+                className={`label-track px-4 py-2 text-xs transition-all ${
+                  activeSkillTab === 0
+                    ? "bg-gold text-charcoal font-bold shadow-sm"
+                    : "text-muted-foreground hover:text-ivory"
+                }`}
               >
-                START A PROJECT →
-              </Link>
+                FILMMAKING & POST
+              </button>
+              <button
+                onClick={() => setActiveSkillTab(1)}
+                className={`label-track px-4 py-2 text-xs transition-all ${
+                  activeSkillTab === 1
+                    ? "bg-gold text-charcoal font-bold shadow-sm"
+                    : "text-muted-foreground hover:text-ivory"
+                }`}
+              >
+                DIGITAL MARKETING
+              </button>
             </div>
-          </Reveal>
+          </div>
+
+          {/* TAB 1: FILMMAKING */}
+          {activeSkillTab === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mt-12"
+            >
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {skills.map((s, idx) => (
+                  <motion.div
+                    key={s.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="group relative border border-border/70 bg-navy/30 p-8 transition-all duration-300 hover:border-gold/60 hover:bg-navy/50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="label-track !text-xs text-gold/70">{s.accent}</span>
+                      <s.icon
+                        size={20}
+                        className="text-muted-foreground transition-colors group-hover:text-gold"
+                      />
+                    </div>
+                    <h3 className="title-card mt-6 text-xl text-ivory group-hover:text-gold transition-colors">
+                      {s.title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                      {s.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 2: DIGITAL MARKETING */}
+          {activeSkillTab === 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mt-12"
+            >
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {digitalMarketingSkills.map((s, idx) => (
+                  <motion.div
+                    key={s.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.08 }}
+                    className="group relative border border-border/70 bg-navy/30 p-8 transition-all duration-300 hover:border-gold/60 hover:bg-navy/50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="label-track !text-xs text-gold/70">{s.accent}</span>
+                      <s.icon
+                        size={20}
+                        className="text-muted-foreground transition-colors group-hover:text-gold"
+                      />
+                    </div>
+                    <h3 className="title-card mt-6 text-xl text-ivory group-hover:text-gold transition-colors">
+                      {s.title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                      {s.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </section>
+
+      {/* SOFTWARE MASTERY */}
+      <section className="border-t border-border bg-charcoal relative overflow-hidden">
+        <div className="mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-36">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pb-12 border-b border-border/60">
+            <div>
+              <p className="label-track text-gold">05 — Tools & Tech</p>
+              <h2 className="title-card mt-4 text-4xl text-ivory md:text-7xl">Software Mastery</h2>
+            </div>
+            <p className="max-w-md text-sm text-muted-foreground leading-relaxed">
+              Industry-standard software utilized across narrative editing, visual effects, precision grading, camera tracking and pre-visualization.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {software.map((sw, idx) => (
+              <motion.div
+                key={sw.name}
+                initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
+                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.7, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                className="group relative border border-border/70 bg-navy/30 p-6 sm:p-7 transition-all duration-400 hover:border-gold/70 hover:bg-navy/50 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)] md:hover:-translate-y-1.5 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-4">
+                    {/* Large, Prominent Original Software Logo Frame */}
+                    <div className="h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 flex items-center justify-center rounded bg-charcoal/95 p-3.5 border border-border/80 transition-all duration-300 group-hover:border-gold group-hover:shadow-[0_0_28px_rgba(201,164,76,0.3)]">
+                      <img
+                        src={sw.logo}
+                        alt={`${sw.name} original software logo`}
+                        loading="lazy"
+                        decoding="async"
+                        width={96}
+                        height={96}
+                        className="h-full w-full object-contain filter transition-all duration-300 group-hover:scale-108"
+                      />
+                    </div>
+                    
+                    <span className="label-track !text-[9px] text-gold/90 px-2.5 py-1 border border-border/70 bg-charcoal/60 rounded-xs transition-colors group-hover:border-gold/60 group-hover:text-gold text-right">
+                      {sw.use}
+                    </span>
+                  </div>
+
+                  <h3 className="title-card mt-6 text-xl text-ivory group-hover:text-gold transition-colors">
+                    {sw.name}
+                  </h3>
+                  <p className="mt-2.5 text-xs text-muted-foreground leading-relaxed">
+                    {sw.desc}
+                  </p>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-border/40 flex items-center justify-between text-[9px] font-mono text-muted-foreground group-hover:text-gold/80 transition-colors">
+                  <span className="label-track !text-[8px] text-slate">PROFICIENCY</span>
+                  <span className="text-gold">PRODUCTION READY ✦</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
     </>

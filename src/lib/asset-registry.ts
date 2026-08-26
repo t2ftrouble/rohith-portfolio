@@ -16,6 +16,7 @@ import digitalMarketingWorldwide from "@/assets/digital marketing worldwide.webp
 export interface AssetOption {
   id: string;
   name: string;
+  filename: string;
   path: string;
   category: "project" | "general" | "before-after";
 }
@@ -25,24 +26,28 @@ export const assetOptions: AssetOption[] = [
   {
     id: "project-one-last-day",
     name: "One Last Day (Project Cover)",
+    filename: "project-one-last-day.webp",
     path: oneLastDay,
     category: "project",
   },
   {
     id: "project-toothpaste",
     name: "Toothpaste (Project Cover)",
+    filename: "project-toothpaste.webp",
     path: toothpaste,
     category: "project",
   },
   {
     id: "project-kadalar",
     name: "Kadalar (Project Cover)",
+    filename: "project-kadalar.webp",
     path: kadalar,
     category: "project",
   },
   {
     id: "project-radhal",
     name: "Radhal (Project Cover)",
+    filename: "project-radhal.webp",
     path: radhal,
     category: "project",
   },
@@ -50,6 +55,7 @@ export const assetOptions: AssetOption[] = [
   {
     id: "one-last-day-poster",
     name: "One Last Day Poster",
+    filename: "one-last-day-poster.webp",
     path: oneLastDayPoster,
     category: "project",
   },
@@ -57,12 +63,14 @@ export const assetOptions: AssetOption[] = [
   {
     id: "one-last-day-before",
     name: "One Last Day Before CG",
+    filename: "one-last-day-before-cg.webp",
     path: oneLastDayBefore,
     category: "before-after",
   },
   {
     id: "one-last-day-after",
     name: "One Last Day After CG",
+    filename: "one-last-day-after-cg.webp",
     path: oneLastDayAfter,
     category: "before-after",
   },
@@ -70,24 +78,28 @@ export const assetOptions: AssetOption[] = [
   {
     id: "hero-street",
     name: "Hero Street",
+    filename: "hero-street.webp",
     path: heroStreet,
     category: "general",
   },
   {
     id: "about-editroom",
     name: "About Edit Room",
+    filename: "about-editroom.webp",
     path: aboutEditroom,
     category: "general",
   },
   {
     id: "digital-marketing-chennai",
     name: "Digital Marketing Chennai",
+    filename: "digital marketing chennai.webp",
     path: digitalMarketingChennai,
     category: "general",
   },
   {
     id: "digital-marketing-worldwide",
     name: "Digital Marketing Worldwide",
+    filename: "digital marketing worldwide.webp",
     path: digitalMarketingWorldwide,
     category: "general",
   },
@@ -95,6 +107,12 @@ export const assetOptions: AssetOption[] = [
 
 export function getAssetById(id: string): AssetOption | undefined {
   return assetOptions.find((asset) => asset.id === id);
+}
+
+export function getAssetByPathOrFilename(str: string): AssetOption | undefined {
+  if (!str) return undefined;
+  const basename = str.split("/").pop() || str;
+  return assetOptions.find((asset) => asset.path === str || asset.filename === basename || asset.id === str);
 }
 
 export function getAssetsByCategory(category: AssetOption["category"]): AssetOption[] {

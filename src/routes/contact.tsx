@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Reveal } from "@/components/Reveal";
+import { FocusReveal } from "@/components/FocusReveal";
 import { Stage } from "@/components/three/Stage";
+import { SocialLinks } from "@/components/SocialLinks";
+import { getSocialLinks, defaultSocialLinks, type SocialLinksData } from "@/lib/social-links";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -45,29 +48,8 @@ const digitalServices = [
   "Google Ads",
 ];
 
-const details = [
-  {
-    label: "Email",
-    value: "t2frohithyt@gmail.com",
-    href: "mailto:t2frohithyt@gmail.com",
-  },
-  {
-    label: "Phone",
-    value: "+91 72001 73240",
-    href: "tel:+917200173240",
-  },
-  {
-    label: "Instagram",
-    value: "@TROUBLE_ROHII",
-    href: "https://instagram.com/trouble_rohii",
-  },
-  {
-    label: "Location",
-    value: "Chennai, Tamil Nadu, India",
-  },
-];
-
 function Contact() {
+  const [socialLinks, setSocialLinks] = useState<SocialLinksData>(defaultSocialLinks);
   const [formData, setFormData] = useState({
     name: "",
     business: "",
@@ -77,9 +59,12 @@ function Contact() {
     message: "",
   });
 
+  useEffect(() => {
+    getSocialLinks().then(setSocialLinks).catch(() => {});
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, just open email with the form data
     const subject = encodeURIComponent(`Project Enquiry from ${formData.name}`);
     const body = encodeURIComponent(
       `Name: ${formData.name}\nBusiness/Brand: ${formData.business}\nLocation: ${formData.location}\nProject Type: ${formData.projectType}\nBudget Range: ${formData.budget}\n\nMessage:\n${formData.message}`,
@@ -96,7 +81,7 @@ function Contact() {
       <div className="vignette" />
 
       <div className="relative mx-auto max-w-[1600px] px-6 pb-28 pt-36 md:px-12 md:pb-40 md:pt-48">
-        <Reveal>
+        <FocusReveal>
           <p className="label-track text-gold">Contact</p>
           <h1 className="title-card mt-6 text-[13vw] leading-[0.85] text-ivory md:text-[8vw]">
             Let&apos;s make
@@ -107,7 +92,7 @@ function Contact() {
             Film projects, creative collaborations, or digital content — let's build something worth
             watching.
           </p>
-        </Reveal>
+        </FocusReveal>
 
         <div className="mt-20 grid gap-14 md:grid-cols-12">
           <Reveal className="md:col-span-5">
@@ -116,33 +101,51 @@ function Contact() {
             <p className="mt-6 max-w-sm text-sm leading-relaxed text-muted-foreground">
               Chennai, Tamil Nadu, India
             </p>
+
+            {/* Social channels card grid */}
+            <div className="mt-10">
+              <p className="label-track text-gold !text-[9px] mb-4">SOCIAL CHANNELS</p>
+              <SocialLinks links={socialLinks} variant="footer" />
+            </div>
           </Reveal>
 
           <div className="md:col-span-6 md:col-start-7">
             <ul className="divide-y divide-border border-y border-border">
-              {details.map((d, i) => (
-                <Reveal key={d.label} delay={i * 0.08}>
-                  <li className="flex items-baseline justify-between gap-6 py-6">
-                    <span className="label-track">{d.label}</span>
-                    {d.href ? (
-                      <a
-                        href={d.href}
-                        target={d.href.startsWith("http") ? "_blank" : undefined}
-                        rel="noreferrer"
-                        data-cursor="text"
-                        className="text-right text-base text-ivory transition-colors hover:text-gold md:text-xl"
-                      >
-                        {d.value}
-                      </a>
-                    ) : (
-                      <span className="text-right text-base text-ivory md:text-xl">{d.value}</span>
-                    )}
-                  </li>
-                </Reveal>
-              ))}
+              <Reveal delay={0.08}>
+                <li className="flex items-baseline justify-between gap-6 py-6">
+                  <span className="label-track">Email</span>
+                  <a
+                    href="mailto:t2frohithyt@gmail.com"
+                    data-cursor="text"
+                    className="text-right text-base text-ivory transition-colors hover:text-gold md:text-xl"
+                  >
+                    t2frohithyt@gmail.com
+                  </a>
+                </li>
+              </Reveal>
+              <Reveal delay={0.16}>
+                <li className="flex items-baseline justify-between gap-6 py-6">
+                  <span className="label-track">Phone</span>
+                  <a
+                    href="tel:+917200173240"
+                    data-cursor="text"
+                    className="text-right text-base text-ivory transition-colors hover:text-gold md:text-xl"
+                  >
+                    +91 72001 73240
+                  </a>
+                </li>
+              </Reveal>
+              <Reveal delay={0.24}>
+                <li className="flex items-baseline justify-between gap-6 py-6">
+                  <span className="label-track">Location</span>
+                  <span className="text-right text-base text-ivory md:text-xl">
+                    Chennai, Tamil Nadu, India
+                  </span>
+                </li>
+              </Reveal>
             </ul>
 
-            <Reveal delay={0.4}>
+            <Reveal delay={0.32}>
               <a
                 href="mailto:t2frohithyt@gmail.com"
                 data-cursor="enter →"
@@ -152,6 +155,16 @@ function Contact() {
               </a>
             </Reveal>
           </div>
+        </div>
+
+        {/* CHANNELS & PROFILES FULL CARDS */}
+        <div className="mt-20 border-t border-border pt-16">
+          <Reveal>
+            <p className="label-track text-gold">CHANNELS & CONNECT</p>
+            <div className="mt-8">
+              <SocialLinks links={socialLinks} variant="card" />
+            </div>
+          </Reveal>
         </div>
 
         {/* SERVICES */}
@@ -187,15 +200,16 @@ function Contact() {
           </div>
         </div>
 
-        {/* PROJECT ENQUIRY FORM */}
+        {/* INQUIRY FORM */}
         <div className="mt-24 border-t border-border pt-16">
           <Reveal>
-            <p className="label-track text-gold">PROJECT ENQUIRY</p>
+            <p className="label-track text-gold">GET IN TOUCH</p>
+            <h2 className="title-card mt-4 text-3xl text-ivory md:text-5xl">Send an Enquiry</h2>
           </Reveal>
-          <Reveal delay={0.1} className="mt-12">
-            <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
+          <Reveal delay={0.1}>
+            <form onSubmit={handleSubmit} className="mt-12 grid gap-6 md:grid-cols-2">
               <div>
-                <label className="label-track block mb-2 text-gold">NAME</label>
+                <label className="label-track block mb-2 text-gold">NAME *</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -222,20 +236,27 @@ function Contact() {
                   className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
                 />
               </div>
-              <div>
-                <label className="label-track block mb-2 text-gold">PROJECT TYPE</label>
-                <select
-                  value={formData.projectType}
-                  onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
-                  className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-                >
-                  <option value="">Select project type</option>
-                  <option value="Film Project">Film Project</option>
-                  <option value="Digital Marketing">Digital Marketing</option>
-                  <option value="Content Creation">Content Creation</option>
-                  <option value="Video Editing">Video Editing</option>
-                  <option value="Other">Other</option>
-                </select>
+              <div className="md:col-span-2">
+                <label className="label-track block mb-3 text-gold">PROJECT DISCIPLINE *</label>
+                <div className="flex flex-wrap gap-2.5">
+                  {["FILM", "COMMERCIAL", "EDIT", "VFX", "DIGITAL CAMPAIGN", "OTHER"].map((choice) => {
+                    const isSelected = formData.projectType === choice;
+                    return (
+                      <button
+                        key={choice}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, projectType: choice })}
+                        className={`label-track px-4 py-2.5 !text-[9px] border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-gold border-gold !text-charcoal font-bold shadow-md"
+                            : "border-border/80 bg-charcoal/60 text-ivory/80 hover:border-gold/60 hover:text-gold"
+                        }`}
+                      >
+                        {choice}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div>
                 <label className="label-track block mb-2 text-gold">BUDGET RANGE</label>

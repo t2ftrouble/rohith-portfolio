@@ -1,856 +1,1105 @@
 import { useState, useEffect } from "react";
-import type { ProjectFormData } from "@/lib/project-cms";
-import { assetOptions, getAssetById } from "@/lib/asset-registry";
+import type { ProjectFormData, ProjectCMSData } from "@/lib/project-cms";
+import { assetOptions, getAssetById, getAssetByPathOrFilename } from "@/lib/asset-registry";
+import { resolveImageUrl, getImageLabel } from "@/lib/asset-resolver";
+import {
+  Play,
+  Eye,
+  Upload,
+  Trash2,
+  CheckCircle2,
+  Image as ImageIcon,
+  SlidersHorizontal,
+  Plus,
+  Info,
+} from "lucide-react";
 
 interface ProjectFormProps {
-  project?: any;
+  project?: ProjectCMSData | null;
   onSave: (project: ProjectFormData) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
-export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
-  const [formData, setFormData] = useState<{
-    slug: string;
-    number: string;
-    title: string;
-    type: string;
-    role: string;
-    year: string;
-    status: string;
-    description: string;
-    process: string[];
-    visuals: string;
-    image: string;
-    category: "FILMMAKING" | "VFX / CG" | "EDITING" | "DESIGN" | "CONTENT";
-    hasVideo: boolean;
-    videoId: string;
-    credits: { role: string; name: string }[];
-    fullCredits: string;
-    galleryImages: string[];
-    client: string;
-  }>(
-    project
-      ? {
-          slug: project.slug,
-          number: project.number,
-          title: project.title,
-          type: project.type,
-          role: project.role,
-          year: project.year || "",
-          status: project.status || "",
-          description: project.description,
-          process: project.process,
-          visuals: project.visuals,
-          image: project.image,
-          category: project.category,
-          hasVideo: project.hasVideo || false,
-          videoId: project.videoId || "",
-          credits: project.credits || [],
-          fullCredits: project.fullCredits || "",
-          galleryImages: project.galleryImages || [],
-          client: project.client || "",
-        }
-      : {
-          slug: "",
-          number: "",
-          title: "",
-          type: "",
-          role: "",
-          year: "",
-          status: "",
-          description: "",
-          process: [],
-          visuals: "",
-          image: "",
-          category: "FILMMAKING",
-          hasVideo: false,
-          videoId: "",
-          credits: [],
-          fullCredits: "",
-          galleryImages: [],
-          client: "",
-        }
-  );
+export function ProjectForm({ project, onSave, onCancel, isLoading = false }: ProjectFormProps) {
+  const [formData, setFormData] = useState({
+    slug: project?.slug || "",
+    number: project?.number || "01",
+    title: project?.title || "",
+    type: project?.type || "Short Film",
+    role: project?.role || "Story • Director • Editor",
+    year: project?.year || new Date().getFullYear().toString(),
+    status: project?.status || "Released",
+    description: project?.description || "",
+    visuals: project?.visuals || "Film video, poster, stills",
+    category: (project?.category || "FILMMAKING") as ProjectFormData["category"],
+    hasVideo: project?.hasVideo || false,
+    videoId: project?.videoId || "",
+    fullCredits: project?.fullCredits || "",
+    client: project?.client || "",
+    emotionalDescriptor: project?.emotionalDescriptor || "",
+    whatIFelt: project?.whatIFelt || "",
+  });
 
-  const [selectedCoverAsset, setSelectedCoverAsset] = useState<string | null>(null);
-  const [selectedGalleryAssets, setSelectedGalleryAssets] = useState<string[]>([]);
-  const [coverImageUpload, setCoverImageUpload] = useState<string | null>(null);
-  const [posterImageUpload, setPosterImageUpload] = useState<string | null>(null);
-  const [galleryImageUploads, setGalleryImageUploads] = useState<string[]>([]);
-  const [useBeforeAfter, setUseBeforeAfter] = useState(false);
-  const [beforeImageUpload, setBeforeImageUpload] = useState<string | null>(null);
-  const [afterImageUpload, setAfterImageUpload] = useState<string | null>(null);
-  const [selectedBeforeAsset, setSelectedBeforeAsset] = useState<string | null>(null);
-  const [selectedAfterAsset, setSelectedAfterAsset] = useState<string | null>(null);
-  const [processText, setProcessText] = useState(
-    project?.process?.join("\n") || ""
-  );
-  const [creditsText, setCreditsText] = useState(
-    project?.credits?.map((c: { role: string; name: string }) => `${c.role}: ${c.name}`).join("\n") || ""
-  );
+  const [coverImage, setCoverImage] = useState<string>(project?.image || "");
+  const [posterImage, setPosterImage] = useState<string>(project?.posterImage || "");
+  const [useBeforeAfter, setUseBeforeAfter] = useState<boolean>(Boolean(project?.showBeforeAfter));
+  const [beforeImage, setBeforeImage] = useState<string>(project?.beforeImage || "");
+  const [afterImage, setAfterImage] = useState<string>(project?.afterImage || "");
+  const [galleryImages, setGalleryImages] = useState<string[]>(project?.galleryImages || []);
 
-  // Initialize selected assets when editing
+  const [processText, setProcessText] = useState<string>(project?.process?.join("\n") || "");
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Sync state if project changes
   useEffect(() => {
-    if (project?.image) {
-      const matchingAsset = assetOptions.find((a) => a.path === project.image);
-      if (matchingAsset) {
-        setSelectedCoverAsset(matchingAsset.id);
-      } else {
-        // If not in asset registry, it's a custom URL
-        setCoverImageUpload(project.image);
-      }
-    }
-    if (project?.galleryImages && project.galleryImages.length > 0) {
-      const matchedIds: string[] = [];
-      const customUrls: string[] = [];
-      project.galleryImages.forEach((url: string) => {
-        const match = assetOptions.find((a) => a.path === url);
-        if (match) {
-          matchedIds.push(match.id);
-        } else {
-          customUrls.push(url);
-        }
+    if (project) {
+      setFormData({
+        slug: project.slug,
+        number: project.number,
+        title: project.title,
+        type: project.type,
+        role: project.role,
+        year: project.year || "",
+        status: project.status || "",
+        description: project.description,
+        visuals: project.visuals || "",
+        category: project.category || "FILMMAKING",
+        hasVideo: Boolean(project.hasVideo),
+        videoId: project.videoId || "",
+        fullCredits: project.fullCredits || "",
+        client: project.client || "",
+        emotionalDescriptor: project.emotionalDescriptor || "",
+        whatIFelt: project.whatIFelt || "",
       });
-      setSelectedGalleryAssets(matchedIds);
-      setGalleryImageUploads(customUrls);
-    }
-    if (project?.posterImage) {
-      const match = assetOptions.find((a) => a.path === project.posterImage);
-      if (match) {
-        // You could add poster to asset registry if needed
-      } else {
-        setPosterImageUpload(project.posterImage);
-      }
-    }
-    if (project?.showBeforeAfter) {
-      setUseBeforeAfter(true);
-    }
-    if (project?.beforeImage) {
-      const match = assetOptions.find((a) => a.path === project.beforeImage);
-      if (match) {
-        setSelectedBeforeAsset(match.id);
-      } else {
-        setBeforeImageUpload(project.beforeImage);
-      }
-    }
-    if (project?.afterImage) {
-      const match = assetOptions.find((a) => a.path === project.afterImage);
-      if (match) {
-        setSelectedAfterAsset(match.id);
-      } else {
-        setAfterImageUpload(project.afterImage);
-      }
+      setCoverImage(project.image || "");
+      setPosterImage(project.posterImage || "");
+      setUseBeforeAfter(Boolean(project.showBeforeAfter));
+      setBeforeImage(project.beforeImage || "");
+      setAfterImage(project.afterImage || "");
+      setGalleryImages(project.galleryImages || []);
+      setProcessText(project.process?.join("\n") || "");
     }
   }, [project]);
 
-  const handleFileUpload = (file: File, setter: (url: string) => void) => {
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setter(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const slugify = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
+  const handleTitleChange = (val: string) => {
+    setFormData((prev) => {
+      const newSlug =
+        !project && (!prev.slug || prev.slug === slugify(prev.title)) ? slugify(val) : prev.slug;
+      return { ...prev, title: val, slug: newSlug };
+    });
+  };
+
+  const handleFileUpload = async (
+    file: File,
+    onSuccess: (url: string) => void,
+    folder: string = "covers"
+  ) => {
+    if (!file || !file.type.startsWith("image/")) {
+      setFormError("Please select a valid image file (JPG, PNG, WEBP)");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadStatus(`Uploading ${file.name}...`);
+    setFormError(null);
+
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+      uploadData.append("folder", folder);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        credentials: "include",
+        body: uploadData,
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({ error: "Upload failed" }));
+        throw new Error(errJson.error || "Upload failed");
+      }
+
+      const data = await response.json();
+      if (!data.url) {
+        throw new Error("No URL returned from upload server");
+      }
+
+      onSuccess(data.url);
+      setUploadStatus(`✓ Uploaded ${file.name} successfully`);
+      setTimeout(() => setUploadStatus(null), 3500);
+    } catch (error) {
+      console.error("Upload error:", error);
+      setFormError(error instanceof Error ? error.message : "Failed to upload image");
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleImageUrl = (url: string, setter: (url: string) => void) => {
-    if (url && url.trim().length > 0) {
-      setter(url.trim());
-    }
+  const cleanVideoId = (input: string): string => {
+    if (!input) return "";
+    const match = input.match(
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+    );
+    return match && match[1] ? match[1] : input.trim();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
 
-    // Parse process lines
+    if (!formData.title.trim()) {
+      setFormError("Project Title is required");
+      return;
+    }
+
+    if (!coverImage.trim()) {
+      setFormError("Cover Image is required. Please upload or select a cover image.");
+      return;
+    }
+
     const process = processText
       .split("\n")
-      .map((line: string) => line.trim())
-      .filter((line: string) => line.length > 0);
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
 
-    // Parse credits lines
-    const credits: { role: string; name: string }[] = [];
-    creditsText.split("\n").forEach((line: string) => {
-      const match = line.match(/^(.+?):\s*(.+)$/);
-      if (match && match[1] && match[2]) {
-        credits.push({ role: match[1].trim(), name: match[2].trim() });
-      }
-    });
+    const videoId = cleanVideoId(formData.videoId);
 
-    // Extract YouTube video ID from URL if provided
-    let videoId: string | undefined = formData.videoId || undefined;
-    if (videoId && !videoId.match(/^[a-zA-Z0-9_-]{11}$/)) {
-      const match = videoId.match(
-        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
-      );
-      if (match && match[1]) {
-        videoId = match[1];
-      } else {
-        videoId = undefined;
-      }
-    }
-
-    // Combine asset registry selections with custom uploads
-    const finalGalleryImages = [
-      ...selectedGalleryAssets.map((id) => {
-        const asset = getAssetById(id);
-        return asset?.path || "";
-      }),
-      ...galleryImageUploads,
-    ].filter((url) => url.trim().length > 0);
-
-    const projectData: ProjectFormData = {
-      slug: formData.slug,
-      number: formData.number,
-      title: formData.title,
-      type: formData.type,
-      role: formData.role,
-      description: formData.description,
+    const payload: ProjectFormData = {
+      slug: formData.slug.trim() || slugify(formData.title),
+      number: formData.number.trim() || "01",
+      title: formData.title.trim(),
+      type: formData.type.trim() || "Short Film",
+      role: formData.role.trim() || "Director",
+      description: formData.description.trim(),
       process,
-      visuals: formData.visuals,
-      image: coverImageUpload || (selectedCoverAsset ? getAssetById(selectedCoverAsset)?.path : "") || formData.image,
+      visuals: formData.visuals.trim() || "Film stills",
+      image: coverImage.trim(),
       category: formData.category,
-      hasVideo: !!videoId,
-      credits,
+      year: formData.year.trim() || null,
+      status: formData.status.trim() || null,
+      hasVideo: Boolean(videoId),
+      videoId: videoId || null,
+      fullCredits: formData.fullCredits.trim() || null,
+      client: formData.client.trim() || null,
+      posterImage: posterImage.trim() || null,
+      showBeforeAfter: useBeforeAfter,
+      beforeImage: useBeforeAfter ? beforeImage.trim() || null : null,
+      afterImage: useBeforeAfter ? afterImage.trim() || null : null,
+      galleryImages: galleryImages.filter((img) => Boolean(img && img.trim())),
+      emotionalDescriptor: formData.emotionalDescriptor.trim() || null,
+      whatIFelt: formData.whatIFelt.trim() || null,
     };
 
-    // Add optional fields only if they have values
-    if (formData.year) projectData.year = formData.year;
-    if (formData.status) projectData.status = formData.status;
-    if (videoId) projectData.videoId = videoId;
-    if (formData.fullCredits) projectData.fullCredits = formData.fullCredits;
-    if (finalGalleryImages.length > 0) {
-      projectData.galleryImages = finalGalleryImages;
-    }
-    if (formData.client) projectData.client = formData.client;
-    if (posterImageUpload) projectData.posterImage = posterImageUpload;
-    if (useBeforeAfter) projectData.showBeforeAfter = true;
-    if (beforeImageUpload) projectData.beforeImage = beforeImageUpload;
-    if (afterImageUpload) projectData.afterImage = afterImageUpload;
-
-    onSave(projectData);
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox"
-          ? (e.target as HTMLInputElement).checked
-          : value,
-    }));
+    onSave(payload);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="title-card text-2xl text-ivory">
-          {project ? "Edit Project" : "Add New Project"}
-        </h2>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="label-track text-gold hover:text-ivory transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-
-      {/* Basic Info */}
-      <div className="space-y-4">
-        <h3 className="label-track text-gold">Basic Information</h3>
-
+    <div className="mx-auto max-w-5xl space-y-8 bg-charcoal">
+      {/* Header with Mode Toggle */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
-          <label className="block text-sm text-ivory/80 mb-2">Title *</label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            required
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-            placeholder="Project title"
-          />
+          <span className="label-track text-gold">ADMIN CMS</span>
+          <h2 className="title-card mt-2 text-3xl text-ivory">
+            {project ? `Edit: ${project.title}` : "Add New Portfolio Project"}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Changes are saved directly to your Supabase database and persist across the site.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-ivory/80 mb-2">Slug *</label>
-            <input
-              type="text"
-              name="slug"
-              value={formData.slug}
-              onChange={handleChange}
-              required
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-              placeholder="project-slug (URL-friendly)"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-ivory/80 mb-2">Type *</label>
-            <input
-              type="text"
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              required
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-              placeholder="Short Film, Pilot Film, etc."
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm text-ivory/80 mb-2">Year</label>
-            <input
-              type="text"
-              name="year"
-              value={formData.year}
-              onChange={handleChange}
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-              placeholder="2024"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-ivory/80 mb-2">Status</label>
-            <input
-              type="text"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-              placeholder="Released, In Progress, etc."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-ivory/80 mb-2">Category *</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
+        <div className="flex items-center gap-3">
+          <div className="flex rounded border border-border bg-navy/40 p-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab("edit")}
+              className={`label-track px-4 py-2 !text-[9px] transition-colors rounded ${
+                activeTab === "edit"
+                  ? "bg-gold !text-charcoal font-bold"
+                  : "text-ivory/70 hover:text-ivory"
+              }`}
             >
-              <option value="FILMMAKING">FILMMAKING</option>
-              <option value="VFX / CG">VFX / CG</option>
-              <option value="EDITING">EDITING</option>
-              <option value="DESIGN">DESIGN</option>
-              <option value="CONTENT">CONTENT</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">Client (Optional)</label>
-          <input
-            type="text"
-            name="client"
-            value={formData.client || ""}
-            onChange={handleChange}
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-            placeholder="Client name"
-          />
-        </div>
-      </div>
-
-      {/* Role & Description */}
-      <div className="space-y-4">
-        <h3 className="label-track text-gold">Details</h3>
-
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">Your Role *</label>
-          <input
-            type="text"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            required
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-            placeholder="Director, Editor, CG Artist, etc."
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">Description *</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            required
-            rows={4}
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none resize-none"
-            placeholder="Brief description of the project"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">
-            Process (one per line)
-          </label>
-          <textarea
-            value={processText}
-            onChange={(e) => setProcessText(e.target.value)}
-            rows={4}
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none resize-none"
-            placeholder="Story development&#10;Direction on set&#10;Editing"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">Visuals</label>
-          <input
-            type="text"
-            name="visuals"
-            value={formData.visuals}
-            onChange={handleChange}
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-            placeholder="Video, poster, stills, etc."
-          />
-        </div>
-      </div>
-
-      {/* Images */}
-      <div className="space-y-4">
-        <h3 className="label-track text-gold">Images</h3>
-
-        {/* Cover Image */}
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">
-            Cover Image *
-          </label>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => document.getElementById("cover-upload")?.click()}
-                className="flex-1 label-track border border-gold/60 px-4 py-2 !text-[10px] !text-gold hover:bg-gold/10 transition-colors"
-              >
-                Upload File
-              </button>
-              <input
-                id="cover-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, setCoverImageUpload);
-                }}
-              />
-            </div>
-            <input
-              type="text"
-              value={coverImageUpload || ""}
-              onChange={(e) => handleImageUrl(e.target.value, setCoverImageUpload)}
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-              placeholder="Or paste image URL..."
-            />
-            <select
-              value={selectedCoverAsset || ""}
-              onChange={(e) => {
-                const assetId = e.target.value;
-                setSelectedCoverAsset(assetId || null);
-                if (assetId) {
-                  const asset = getAssetById(assetId);
-                  if (asset) {
-                    setCoverImageUpload(asset.path);
-                  }
-                }
-              }}
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
+              Form Editor
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("preview")}
+              className={`label-track flex items-center gap-1.5 px-4 py-2 !text-[9px] transition-colors rounded ${
+                activeTab === "preview"
+                  ? "bg-gold !text-charcoal font-bold"
+                  : "text-ivory/70 hover:text-ivory"
+              }`}
             >
-              <option value="">Or select from portfolio assets...</option>
-              {assetOptions.map((asset) => (
-                <option key={asset.id} value={asset.id}>
-                  {asset.name}
-                </option>
-              ))}
-            </select>
+              <Eye size={12} />
+              Live Preview
+            </button>
           </div>
-          {(coverImageUpload || selectedCoverAsset) && (
-            <div className="mt-2">
-              <img
-                src={coverImageUpload || (selectedCoverAsset ? getAssetById(selectedCoverAsset)?.path : "")}
-                alt="Cover preview"
-                className="h-32 w-full object-cover rounded border border-border"
-              />
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={onCancel}
+            className="label-track border border-border px-4 py-2 !text-[9px] text-ivory/80 hover:text-ivory transition-colors"
+          >
+            Cancel
+          </button>
         </div>
+      </div>
 
-        {/* Poster Image */}
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">
-            Poster Image (Optional)
-          </label>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => document.getElementById("poster-upload")?.click()}
-                className="flex-1 label-track border border-gold/60 px-4 py-2 !text-[10px] !text-gold hover:bg-gold/10 transition-colors"
-              >
-                Upload File
-              </button>
-              <input
-                id="poster-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, setPosterImageUpload);
-                }}
-              />
-            </div>
-            <input
-              type="text"
-              value={posterImageUpload || ""}
-              onChange={(e) => handleImageUrl(e.target.value, setPosterImageUpload)}
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-              placeholder="Or paste image URL..."
-            />
+      {uploadStatus && (
+        <div className="p-3 bg-gold/10 border border-gold/40 text-gold text-xs rounded">
+          {uploadStatus}
+        </div>
+      )}
+
+      {formError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/40 text-red-400 text-sm rounded">
+          {formError}
+        </div>
+      )}
+
+      {/* LIVE PREVIEW TAB */}
+      {activeTab === "preview" && (
+        <div className="space-y-8 rounded border border-gold/40 bg-navy/20 p-6 md:p-8">
+          <div className="flex items-center justify-between border-b border-border/80 pb-4">
+            <p className="label-track text-gold flex items-center gap-2">
+              <Eye size={14} /> LIVE PREVIEW (HOW IT LOOKS ON SITE)
+            </p>
+            <button
+              type="button"
+              onClick={() => setActiveTab("edit")}
+              className="label-track text-xs text-gold hover:underline"
+            >
+              ← Back to editing
+            </button>
           </div>
-          {posterImageUpload && (
-            <div className="mt-2">
-              <img
-                src={posterImageUpload}
-                alt="Poster preview"
-                className="h-32 w-full object-cover rounded border border-border"
-              />
-            </div>
-          )}
-        </div>
 
-        {/* Gallery Images */}
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">
-            Gallery Images (Optional)
-          </label>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => document.getElementById("gallery-upload")?.click()}
-                className="flex-1 label-track border border-gold/60 px-4 py-2 !text-[10px] !text-gold hover:bg-gold/10 transition-colors"
-              >
-                Add Image
-              </button>
-              <input
-                id="gallery-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleFileUpload(file, (url) => {
-                      setGalleryImageUploads([...galleryImageUploads, url]);
-                    });
-                  }
-                }}
-              />
-            </div>
-            <input
-              type="text"
-              className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-              placeholder="Or paste image URL..."
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const input = e.target as HTMLInputElement;
-                  if (input.value.trim()) {
-                    setGalleryImageUploads([...galleryImageUploads, input.value.trim()]);
-                    input.value = "";
-                  }
-                }
-              }}
-            />
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {galleryImageUploads.map((url, index) => (
-                <div key={index} className="flex items-center gap-3 p-2 border border-border rounded">
+          {/* Chapter Card Preview */}
+          <div className="border border-border/60 bg-charcoal/80 p-6">
+            <p className="label-track text-gold mb-4">HOMEPAGE & PORTFOLIO CHAPTER PREVIEW:</p>
+            <div className="grid gap-6 md:grid-cols-12 md:items-center">
+              <div className="md:col-span-5">
+                <div className="flex items-center gap-2">
+                  <span className="title-card text-4xl text-slate">{formData.number || "01"}</span>
+                  <span className="label-track border border-border px-2 py-0.5 !text-[8px] text-gold">
+                    {formData.category}
+                  </span>
+                </div>
+                <h3 className="title-card mt-2 text-2xl text-ivory md:text-3xl">
+                  {formData.title || "Untitled Project"}
+                </h3>
+                {formData.emotionalDescriptor && (
+                  <p className="mt-1 text-sm text-gold/80 italic">{formData.emotionalDescriptor}</p>
+                )}
+                <p className="label-track mt-2 text-gold">{formData.type || "Short Film"}</p>
+                <p className="label-track mt-1 text-muted-foreground">{formData.role || "Director"}</p>
+                <p className="label-track mt-4 text-ivory/80">View film →</p>
+              </div>
+
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-navy md:col-span-7 border border-border/60">
+                {coverImage ? (
                   <img
-                    src={url}
-                    alt={`Gallery ${index + 1}`}
-                    className="h-12 w-12 object-cover rounded"
+                    src={resolveImageUrl(coverImage)}
+                    alt="Cover preview"
+                    className="h-full w-full object-cover"
                   />
-                  <input
-                    type="text"
-                    value={url}
-                    onChange={(e) => {
-                      const updated = [...galleryImageUploads];
-                      updated[index] = e.target.value;
-                      setGalleryImageUploads(updated);
-                    }}
-                    className="flex-1 bg-navy border-none px-2 py-1 text-sm text-ivory focus:outline-none"
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-muted-foreground text-xs">
+                    No cover image uploaded yet
+                  </div>
+                )}
+                {formData.videoId && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold text-charcoal">
+                      <Play size={20} className="fill-charcoal translate-x-0.5" />
+                    </div>
+                  </div>
+                )}
+                {formData.status && (
+                  <span className="label-track absolute left-3 top-3 bg-charcoal/80 px-2.5 py-1 !text-[8px] text-gold border border-gold/40">
+                    {formData.status}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Details & Images Preview */}
+          <div className="space-y-4 border border-border/60 bg-charcoal/80 p-6">
+            <p className="label-track text-gold">MEDIA ASSETS PREVIEW:</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+              {coverImage && (
+                <div className="border border-border p-2 bg-navy/40">
+                  <p className="text-[10px] text-gold font-bold mb-1">COVER</p>
+                  <img src={resolveImageUrl(coverImage)} alt="Cover" className="aspect-video w-full object-cover" />
+                </div>
+              )}
+              {posterImage && (
+                <div className="border border-border p-2 bg-navy/40">
+                  <p className="text-[10px] text-gold font-bold mb-1">POSTER</p>
+                  <img src={resolveImageUrl(posterImage)} alt="Poster" className="aspect-[2/3] w-full object-contain" />
+                </div>
+              )}
+              {useBeforeAfter && beforeImage && (
+                <div className="border border-border p-2 bg-navy/40">
+                  <p className="text-[10px] text-gold font-bold mb-1">BEFORE (RAW)</p>
+                  <img src={resolveImageUrl(beforeImage)} alt="Before" className="aspect-video w-full object-cover" />
+                </div>
+              )}
+              {useBeforeAfter && afterImage && (
+                <div className="border border-border p-2 bg-navy/40">
+                  <p className="text-[10px] text-gold font-bold mb-1">AFTER (VFX)</p>
+                  <img src={resolveImageUrl(afterImage)} alt="After" className="aspect-video w-full object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT FORM */}
+      <form
+        onSubmit={handleSubmit}
+        className={`space-y-8 ${activeTab === "preview" ? "hidden" : "block"}`}
+      >
+        {/* 1. BASIC INFORMATION */}
+        <div className="border border-border/80 bg-navy/20 p-6 md:p-8 space-y-6">
+          <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gold text-[11px] font-bold text-charcoal">
+              1
+            </span>
+            <h3 className="title-card text-xl text-ivory">Basic Information</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">
+                Project Title <span className="text-gold">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                required
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+                placeholder="e.g. One Last Day"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">
+                Category <span className="text-gold">*</span>
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    category: e.target.value as ProjectFormData["category"],
+                  })
+                }
+                required
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+              >
+                <option value="FILMMAKING">FILMMAKING</option>
+                <option value="VFX / CG">VFX / CG</option>
+                <option value="EDITING">EDITING</option>
+                <option value="DESIGN">DESIGN</option>
+                <option value="CONTENT">CONTENT</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">
+                Project Type <span className="text-gold">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                required
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+                placeholder="e.g. Short Film, Pilot Film, Commercial"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">
+                Your Role <span className="text-gold">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                required
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+                placeholder="e.g. Story • Director • Editor • DI"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">Release Year</label>
+              <input
+                type="text"
+                value={formData.year}
+                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+                placeholder="e.g. 2024"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">Status Badge</label>
+              <input
+                type="text"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+                placeholder="e.g. Released, In Pre-Production, Completed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">
+                Chapter Number (e.g. 01, 02)
+              </label>
+              <input
+                type="text"
+                value={formData.number}
+                onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+                placeholder="01"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">URL Slug</label>
+              <input
+                type="text"
+                value={formData.slug}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none font-mono"
+                placeholder="e.g. one-last-day"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 2. STORY & CONTRIBUTION */}
+        <div className="border border-border/80 bg-navy/20 p-6 md:p-8 space-y-6">
+          <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gold text-[11px] font-bold text-charcoal">
+              2
+            </span>
+            <h3 className="title-card text-xl text-ivory">Story & Contribution</h3>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-ivory/90 mb-2">
+              Project Description / Story <span className="text-gold">*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+              rows={4}
+              className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none resize-none leading-relaxed"
+              placeholder="Tell the story of the project, background context, creative approach..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-ivory/90 mb-2">
+              Contribution Steps (Type one per line)
+            </label>
+            <textarea
+              value={processText}
+              onChange={(e) => setProcessText(e.target.value)}
+              rows={4}
+              className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none resize-none"
+              placeholder="Story and screenplay development&#10;Direction on set&#10;Shot planning and scene composition&#10;Editing and post-production"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">
+                Emotional Tagline (Short phrase beneath title on homepage)
+              </label>
+              <input
+                type="text"
+                value={formData.emotionalDescriptor}
+                onChange={(e) => setFormData({ ...formData, emotionalDescriptor: e.target.value })}
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+                placeholder='e.g. "A story about letting go."'
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ivory/90 mb-2">
+                Available Assets Note
+              </label>
+              <input
+                type="text"
+                value={formData.visuals}
+                onChange={(e) => setFormData({ ...formData, visuals: e.target.value })}
+                className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none"
+                placeholder="e.g. Film video, poster, stills, VFX breakdown"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-ivory/90 mb-2">
+              What I Felt (Behind the Frame personal note)
+            </label>
+            <textarea
+              value={formData.whatIFelt}
+              onChange={(e) => setFormData({ ...formData, whatIFelt: e.target.value })}
+              rows={3}
+              className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none resize-none"
+              placeholder="A brief personal reflection on the creative experience..."
+            />
+          </div>
+        </div>
+
+        {/* 3. COVER & POSTER MEDIA PREVIEWS & MANAGEMENT */}
+        <div className="border border-border/80 bg-navy/20 p-6 md:p-8 space-y-6">
+          <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gold text-[11px] font-bold text-charcoal">
+              3
+            </span>
+            <h3 className="title-card text-xl text-ivory">Cover Image & Poster Management</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* COVER IMAGE */}
+            <div className="space-y-3 p-4 bg-charcoal/90 border border-border rounded">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
+                  <ImageIcon size={14} /> Cover Image (16:9 Landscape) <span className="text-red-400">*</span>
+                </label>
+                {coverImage && (
+                  <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 border border-green-500/30 rounded">
+                    Active
+                  </span>
+                )}
+              </div>
+
+              {coverImage ? (
+                <div className="relative aspect-video w-full overflow-hidden border border-gold/40 bg-navy">
+                  <img
+                    src={resolveImageUrl(coverImage)}
+                    alt="Cover preview"
+                    className="h-full w-full object-cover"
                   />
                   <button
                     type="button"
-                    onClick={() => {
-                      setGalleryImageUploads(galleryImageUploads.filter((_, i) => i !== index));
-                    }}
-                    className="text-red-400 hover:text-red-300 text-sm"
+                    onClick={() => setCoverImage("")}
+                    className="absolute top-2 right-2 rounded bg-red-600/90 p-1.5 text-white hover:bg-red-700 transition-colors shadow-lg"
+                    title="Remove Cover Image"
                   >
-                    Remove
+                    <Trash2 size={14} />
                   </button>
+                  <div className="absolute bottom-0 left-0 right-0 bg-charcoal/90 px-3 py-1.5 border-t border-border/60">
+                    <p className="text-[10px] text-ivory/90 truncate font-mono">
+                      <span className="text-gold font-semibold">Current:</span> {getImageLabel(coverImage)}
+                    </p>
+                  </div>
                 </div>
-              ))}
-              {assetOptions.map((asset) => (
-                <label
-                  key={asset.id}
-                  className="flex items-center gap-3 p-2 border border-border rounded hover:border-gold/50 cursor-pointer"
+              ) : (
+                <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/80 bg-navy/40 p-8 text-center aspect-video">
+                  <ImageIcon size={28} className="text-gold/60 mb-2" />
+                  <p className="text-xs text-ivory font-medium">No cover image selected</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Upload a file or pick from built-in assets</p>
+                </div>
+              )}
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("cover-upload-input")?.click()}
+                  disabled={isUploading}
+                  className="label-track w-full border border-gold bg-gold/10 py-2.5 !text-[9px] text-gold hover:bg-gold hover:!text-charcoal transition-all text-center flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedGalleryAssets.includes(asset.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedGalleryAssets([...selectedGalleryAssets, asset.id]);
-                      } else {
-                        setSelectedGalleryAssets(selectedGalleryAssets.filter((id) => id !== asset.id));
-                      }
-                    }}
-                    className="w-4 h-4"
-                  />
-                  <img
-                    src={asset.path}
-                    alt={asset.name}
-                    className="h-12 w-12 object-cover rounded"
-                  />
-                  <span className="text-sm text-ivory/80">{asset.name}</span>
-                </label>
-              ))}
+                  <Upload size={13} />
+                  {isUploading ? "Uploading..." : "Upload New Cover Image"}
+                </button>
+                <input
+                  id="cover-upload-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, (url) => setCoverImage(url), "covers");
+                  }}
+                />
+
+                <select
+                  value={getAssetByPathOrFilename(coverImage)?.id || ""}
+                  onChange={(e) => {
+                    const asset = getAssetById(e.target.value);
+                    if (asset) setCoverImage(asset.path);
+                  }}
+                  className="w-full bg-navy border border-border px-3 py-2 text-xs text-ivory focus:border-gold focus:outline-none"
+                >
+                  <option value="">Or select built-in asset...</option>
+                  {assetOptions
+                    .filter((a) => a.category === "project" || a.category === "general")
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({a.filename})
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
-            {(galleryImageUploads.length > 0 || selectedGalleryAssets.length > 0) && (
-              <p className="text-xs text-muted-foreground">
-                {galleryImageUploads.length + selectedGalleryAssets.length} image(s) selected
-              </p>
+
+            {/* POSTER IMAGE */}
+            <div className="space-y-3 p-4 bg-charcoal/90 border border-border rounded">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
+                  <ImageIcon size={14} /> Poster Image (2:3 Portrait - Optional)
+                </label>
+                {posterImage ? (
+                  <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 border border-green-500/30 rounded">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground">Optional</span>
+                )}
+              </div>
+
+              {posterImage ? (
+                <div className="relative aspect-[2/3] max-h-56 mx-auto overflow-hidden border border-gold/40 bg-navy">
+                  <img
+                    src={resolveImageUrl(posterImage)}
+                    alt="Poster preview"
+                    className="h-full w-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPosterImage("")}
+                    className="absolute top-2 right-2 rounded bg-red-600/90 p-1.5 text-white hover:bg-red-700 transition-colors shadow-lg"
+                    title="Remove Poster"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <div className="absolute bottom-0 left-0 right-0 bg-charcoal/90 px-3 py-1 border-t border-border/60">
+                    <p className="text-[10px] text-ivory/90 truncate font-mono">
+                      <span className="text-gold font-semibold">Current:</span> {getImageLabel(posterImage)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/80 bg-navy/40 p-6 text-center aspect-[2/3] max-h-56 mx-auto">
+                  <ImageIcon size={28} className="text-gold/60 mb-2" />
+                  <p className="text-xs text-ivory font-medium">No poster artwork</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Upload portrait poster</p>
+                </div>
+              )}
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("poster-upload-input")?.click()}
+                  disabled={isUploading}
+                  className="label-track w-full border border-gold bg-gold/10 py-2.5 !text-[9px] text-gold hover:bg-gold hover:!text-charcoal transition-all text-center flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Upload size={13} />
+                  {isUploading ? "Uploading..." : "Upload Poster Image"}
+                </button>
+                <input
+                  id="poster-upload-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, (url) => setPosterImage(url), "posters");
+                  }}
+                />
+
+                <select
+                  value={getAssetByPathOrFilename(posterImage)?.id || ""}
+                  onChange={(e) => {
+                    const asset = getAssetById(e.target.value);
+                    if (asset) setPosterImage(asset.path);
+                  }}
+                  className="w-full bg-navy border border-border px-3 py-2 text-xs text-ivory focus:border-gold focus:outline-none"
+                >
+                  <option value="">Or select built-in poster...</option>
+                  {assetOptions.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({a.filename})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. VIDEO & VFX BEFORE / AFTER COMPARISON SLIDER */}
+        <div className="border border-border/80 bg-navy/20 p-6 md:p-8 space-y-6">
+          <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gold text-[11px] font-bold text-charcoal">
+              4
+            </span>
+            <h3 className="title-card text-xl text-ivory">Video & VFX Comparison Slider</h3>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-ivory/90 mb-2">
+              YouTube Video URL or Video ID (Optional)
+            </label>
+            <input
+              type="text"
+              value={formData.videoId}
+              onChange={(e) => setFormData({ ...formData, videoId: e.target.value })}
+              className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none font-mono"
+              placeholder="e.g. https://www.youtube.com/watch?v=tUnBO1O66Fc or tUnBO1O66Fc"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Paste the full YouTube URL or the 11-character video ID.
+            </p>
+          </div>
+
+          {/* Before/After Toggle */}
+          <div className="pt-4 border-t border-border/60">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={useBeforeAfter}
+                onChange={(e) => setUseBeforeAfter(e.target.checked)}
+                className="h-5 w-5 accent-gold"
+              />
+              <div>
+                <span className="text-sm font-semibold text-ivory flex items-center gap-2">
+                  <SlidersHorizontal size={16} className="text-gold" />
+                  Enable Interactive Before / After VFX Comparison Slider
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Displays an interactive slider comparing the RAW footage against the Final CG/Color grade.
+                </p>
+              </div>
+            </label>
+
+            {useBeforeAfter && (
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-border/40 pt-6">
+                {/* BEFORE IMAGE */}
+                <div className="space-y-3 p-4 bg-charcoal/90 border border-border rounded">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gold uppercase tracking-wider">
+                      RAW / Before Image
+                    </label>
+                    {beforeImage && (
+                      <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 border border-green-500/30 rounded">
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  {beforeImage ? (
+                    <div className="relative aspect-video w-full overflow-hidden border border-gold/40 bg-navy">
+                      <img
+                        src={resolveImageUrl(beforeImage)}
+                        alt="Before comparison"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setBeforeImage("")}
+                        className="absolute top-2 right-2 rounded bg-red-600/90 p-1.5 text-white hover:bg-red-700 transition-colors shadow-lg"
+                        title="Remove Before Image"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-charcoal/90 px-3 py-1 border-t border-border/60">
+                        <p className="text-[10px] text-ivory/90 truncate font-mono">
+                          <span className="text-gold font-semibold">Current:</span> {getImageLabel(beforeImage)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/80 bg-navy/40 p-6 text-center aspect-video">
+                      <ImageIcon size={24} className="text-gold/60 mb-2" />
+                      <p className="text-xs text-ivory font-medium">No Before image set</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("before-upload-input")?.click()}
+                      disabled={isUploading}
+                      className="label-track w-full border border-gold bg-gold/10 py-2.5 !text-[9px] text-gold hover:bg-gold hover:!text-charcoal transition-all text-center flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Upload size={13} />
+                      {isUploading ? "Uploading..." : "Upload Before Image"}
+                    </button>
+                    <input
+                      id="before-upload-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file, (url) => setBeforeImage(url), "vfx");
+                      }}
+                    />
+
+                    <select
+                      value={getAssetByPathOrFilename(beforeImage)?.id || ""}
+                      onChange={(e) => {
+                        const asset = getAssetById(e.target.value);
+                        if (asset) setBeforeImage(asset.path);
+                      }}
+                      className="w-full bg-navy border border-border px-3 py-2 text-xs text-ivory focus:border-gold focus:outline-none"
+                    >
+                      <option value="">Or select built-in VFX asset...</option>
+                      {assetOptions.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name} ({a.filename})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* AFTER IMAGE */}
+                <div className="space-y-3 p-4 bg-charcoal/90 border border-border rounded">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gold uppercase tracking-wider">
+                      FINAL / After Image
+                    </label>
+                    {afterImage && (
+                      <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 border border-green-500/30 rounded">
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  {afterImage ? (
+                    <div className="relative aspect-video w-full overflow-hidden border border-gold/40 bg-navy">
+                      <img
+                        src={resolveImageUrl(afterImage)}
+                        alt="After comparison"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAfterImage("")}
+                        className="absolute top-2 right-2 rounded bg-red-600/90 p-1.5 text-white hover:bg-red-700 transition-colors shadow-lg"
+                        title="Remove After Image"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-charcoal/90 px-3 py-1 border-t border-border/60">
+                        <p className="text-[10px] text-ivory/90 truncate font-mono">
+                          <span className="text-gold font-semibold">Current:</span> {getImageLabel(afterImage)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/80 bg-navy/40 p-6 text-center aspect-video">
+                      <ImageIcon size={24} className="text-gold/60 mb-2" />
+                      <p className="text-xs text-ivory font-medium">No After image set</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("after-upload-input")?.click()}
+                      disabled={isUploading}
+                      className="label-track w-full border border-gold bg-gold/10 py-2.5 !text-[9px] text-gold hover:bg-gold hover:!text-charcoal transition-all text-center flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Upload size={13} />
+                      {isUploading ? "Uploading..." : "Upload After Image"}
+                    </button>
+                    <input
+                      id="after-upload-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file, (url) => setAfterImage(url), "vfx");
+                      }}
+                    />
+
+                    <select
+                      value={getAssetByPathOrFilename(afterImage)?.id || ""}
+                      onChange={(e) => {
+                        const asset = getAssetById(e.target.value);
+                        if (asset) setAfterImage(asset.path);
+                      }}
+                      className="w-full bg-navy border border-border px-3 py-2 text-xs text-ivory focus:border-gold focus:outline-none"
+                    >
+                      <option value="">Or select built-in VFX asset...</option>
+                      {assetOptions.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name} ({a.filename})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Before/After Toggle */}
-        <div>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={useBeforeAfter}
-              onChange={(e) => setUseBeforeAfter(e.target.checked)}
-              className="w-5 h-5"
-            />
-            <span className="text-sm text-ivory/80">Show Before/After Slider</span>
-          </label>
-        </div>
-
-        {/* Before/After Images */}
-        {useBeforeAfter && (
-          <div className="space-y-4 border-t border-border pt-4">
-            <div>
-              <label className="block text-sm text-ivory/80 mb-2">
-                Before Image *
-              </label>
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById("before-upload")?.click()}
-                    className="flex-1 label-track border border-gold/60 px-4 py-2 !text-[10px] !text-gold hover:bg-gold/10 transition-colors"
-                  >
-                    Upload File
-                  </button>
-                  <input
-                    id="before-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file, setBeforeImageUpload);
-                    }}
-                  />
-                </div>
-                <input
-                  type="text"
-                  value={beforeImageUpload || ""}
-                  onChange={(e) => handleImageUrl(e.target.value, setBeforeImageUpload)}
-                  className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-                  placeholder="Or paste image URL..."
-                />
-                <select
-                  value={selectedBeforeAsset || ""}
-                  onChange={(e) => {
-                    const assetId = e.target.value;
-                    setSelectedBeforeAsset(assetId || null);
-                    if (assetId) {
-                      const asset = getAssetById(assetId);
-                      if (asset) {
-                        setBeforeImageUpload(asset.path);
-                      }
-                    }
-                  }}
-                  className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-                >
-                  <option value="">Or select from portfolio assets...</option>
-                  {assetOptions.map((asset) => (
-                    <option key={asset.id} value={asset.id}>
-                      {asset.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {(beforeImageUpload || selectedBeforeAsset) && (
-                <div className="mt-2">
-                  <img
-                    src={beforeImageUpload || (selectedBeforeAsset ? getAssetById(selectedBeforeAsset)?.path : "")}
-                    alt="Before preview"
-                    className="h-32 w-full object-cover rounded border border-border"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm text-ivory/80 mb-2">
-                After Image *
-              </label>
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById("after-upload")?.click()}
-                    className="flex-1 label-track border border-gold/60 px-4 py-2 !text-[10px] !text-gold hover:bg-gold/10 transition-colors"
-                  >
-                    Upload File
-                  </button>
-                  <input
-                    id="after-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file, setAfterImageUpload);
-                    }}
-                  />
-                </div>
-                <input
-                  type="text"
-                  value={afterImageUpload || ""}
-                  onChange={(e) => handleImageUrl(e.target.value, setAfterImageUpload)}
-                  className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-                  placeholder="Or paste image URL..."
-                />
-                <select
-                  value={selectedAfterAsset || ""}
-                  onChange={(e) => {
-                    const assetId = e.target.value;
-                    setSelectedAfterAsset(assetId || null);
-                    if (assetId) {
-                      const asset = getAssetById(assetId);
-                      if (asset) {
-                        setAfterImageUpload(asset.path);
-                      }
-                    }
-                  }}
-                  className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-                >
-                  <option value="">Or select from portfolio assets...</option>
-                  {assetOptions.map((asset) => (
-                    <option key={asset.id} value={asset.id}>
-                      {asset.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {(afterImageUpload || selectedAfterAsset) && (
-                <div className="mt-2">
-                  <img
-                    src={afterImageUpload || (selectedAfterAsset ? getAssetById(selectedAfterAsset)?.path : "")}
-                    alt="After preview"
-                    className="h-32 w-full object-cover rounded border border-border"
-                  />
-                </div>
-              )}
+        {/* 5. GALLERY IMAGES PREVIEWS & MANAGEMENT */}
+        <div className="border border-border/80 bg-navy/20 p-6 md:p-8 space-y-6">
+          <div className="flex items-center justify-between border-b border-border/60 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gold text-[11px] font-bold text-charcoal">
+                5
+              </span>
+              <h3 className="title-card text-xl text-ivory">Gallery Images ({galleryImages.length})</h3>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Video */}
-      <div className="space-y-4">
-        <h3 className="label-track text-gold">Video (Optional)</h3>
+          {galleryImages.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {galleryImages.map((imgUrl, idx) => (
+                <div key={idx} className="relative border border-border bg-charcoal p-2 rounded group">
+                  <div className="relative aspect-video w-full overflow-hidden bg-navy">
+                    <img
+                      src={resolveImageUrl(imgUrl)}
+                      alt={`Gallery item ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setGalleryImages(galleryImages.filter((_, i) => i !== idx))}
+                      className="absolute top-1 right-1 rounded bg-red-600/90 p-1 text-white hover:bg-red-700 transition-colors shadow"
+                      title="Remove gallery image"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-[10px] text-ivory/80 truncate font-mono">
+                    #{idx + 1}: {getImageLabel(imgUrl)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No gallery images added yet.</p>
+          )}
 
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">
-            YouTube URL or Video ID
-          </label>
-          <input
-            type="text"
-            name="videoId"
-            value={formData.videoId || ""}
-            onChange={handleChange}
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none"
-            placeholder="https://youtube.com/watch?v=... or video ID"
-          />
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => document.getElementById("gallery-upload-input")?.click()}
+              disabled={isUploading}
+              className="label-track border border-gold/80 bg-gold/10 px-4 py-2.5 !text-[9px] text-gold hover:bg-gold hover:!text-charcoal transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Upload size={12} />
+              Add Image from Device
+            </button>
+            <input
+              id="gallery-upload-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleFileUpload(
+                    file,
+                    (url) => setGalleryImages((prev) => [...prev, url]),
+                    "gallery"
+                  );
+                }
+              }}
+            />
+
+            <select
+              onChange={(e) => {
+                const asset = getAssetById(e.target.value);
+                if (asset) {
+                  setGalleryImages((prev) => [...prev, asset.path]);
+                  e.target.value = "";
+                }
+              }}
+              defaultValue=""
+              className="bg-navy border border-border px-3 py-2 text-xs text-ivory focus:border-gold focus:outline-none"
+            >
+              <option value="" disabled>
+                + Add Built-in Asset to Gallery...
+              </option>
+              {assetOptions.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a.filename})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
 
-      {/* Credits */}
-      <div className="space-y-4">
-        <h3 className="label-track text-gold">Credits (Optional)</h3>
+        {/* 6. CREDITS */}
+        <div className="border border-border/80 bg-navy/20 p-6 md:p-8 space-y-6">
+          <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gold text-[11px] font-bold text-charcoal">
+              6
+            </span>
+            <h3 className="title-card text-xl text-ivory">End Credits</h3>
+          </div>
 
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">
-            Full Credits
-          </label>
-          <textarea
-            name="fullCredits"
-            value={formData.fullCredits || ""}
-            onChange={handleChange}
-            rows={6}
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none resize-none"
-            placeholder="Director: John Doe&#10;Producer: Jane Smith&#10;..."
-          />
+          <div>
+            <label className="block text-xs font-semibold text-ivory/90 mb-2">
+              Full Credits (Director, Cast, DOP, Music, Crew, etc.)
+            </label>
+            <textarea
+              value={formData.fullCredits}
+              onChange={(e) => setFormData({ ...formData, fullCredits: e.target.value })}
+              rows={6}
+              className="w-full bg-charcoal border border-border px-4 py-3 text-ivory text-sm focus:border-gold focus:outline-none resize-none font-mono"
+              placeholder="Written & Directed by: Rohith V&#10;Cast: Yash Vijay as Deva&#10;DOP: Yashwanth VK&#10;Music: Danny&#10;Shot on: iPhone"
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm text-ivory/80 mb-2">
-            Key Credits (one per line: Role: Name)
-          </label>
-          <textarea
-            value={creditsText}
-            onChange={(e) => setCreditsText(e.target.value)}
-            rows={4}
-            className="w-full bg-navy border border-border px-4 py-3 text-ivory focus:border-gold focus:outline-none resize-none"
-            placeholder="Director: John Doe&#10;DOP: Jane Smith&#10;Editor: Bob Johnson"
-          />
+        {/* SUBMIT BUTTONS */}
+        <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border">
+          <button
+            type="submit"
+            disabled={isLoading || isUploading}
+            className="label-track bg-gold px-8 py-5 !text-[11px] !text-charcoal font-bold hover:bg-gold/90 transition-all shadow-xl min-h-[48px] flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+          >
+            <CheckCircle2 size={16} />
+            {isLoading ? "Saving to Supabase..." : project ? "SAVE & UPDATE PROJECT" : "PUBLISH NEW PROJECT"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("preview")}
+            disabled={isLoading}
+            className="label-track border border-gold/60 px-6 py-5 !text-[10px] !text-gold hover:bg-gold/10 transition-colors min-h-[48px] disabled:opacity-50 cursor-pointer"
+          >
+            Preview First
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="label-track border border-border px-6 py-5 !text-[10px] text-ivory/70 hover:text-ivory transition-colors min-h-[48px] disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
         </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-4 pt-4 border-t border-border">
-        <button
-          type="submit"
-          className="label-track bg-gold px-8 py-4 !text-[10px] !text-charcoal hover:bg-gold/90 transition-colors"
-        >
-          {project ? "Update Project" : "Add Project"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="label-track border border-gold/60 px-8 py-4 !text-[10px] !text-gold hover:bg-gold/10 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

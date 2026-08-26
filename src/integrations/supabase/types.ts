@@ -1,14 +1,76 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.15";
   };
   public: {
     Tables: {
-      [_ in never]: never;
+      projects: {
+        Row: {
+          id: string;
+          slug: string;
+          number: string;
+          title: string;
+          type: string;
+          role: string;
+          year: string | null;
+          status: string | null;
+          category: "FILMMAKING" | "VFX / CG" | "EDITING" | "DESIGN" | "CONTENT";
+          description: string;
+          process: string[];
+          visuals: string;
+          image: string;
+          poster_image: string | null;
+          has_video: boolean;
+          video_id: string | null;
+          show_before_after: boolean;
+          before_image: string | null;
+          after_image: string | null;
+          full_credits: string | null;
+          gallery_images: string[] | null;
+          client: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          slug: string;
+          number: string;
+          title: string;
+          type: string;
+          role: string;
+          year?: string | null;
+          status?: string | null;
+          category: "FILMMAKING" | "VFX / CG" | "EDITING" | "DESIGN" | "CONTENT";
+          description: string;
+          process: string[];
+          visuals: string;
+          image: string;
+          poster_image?: string | null;
+          has_video?: boolean;
+          video_id?: string | null;
+          show_before_after?: boolean;
+          before_image?: string | null;
+          after_image?: string | null;
+          full_credits?: string | null;
+          gallery_images?: string[] | null;
+          client?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["projects"]["Insert"]>;
+      };
+      admin_sessions: {
+        Row: {
+          id: string;
+          token: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          token: string;
+          expires_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_sessions"]["Insert"]>;
+      };
     };
     Views: {
       [_ in never]: never;
@@ -50,10 +112,10 @@ export type Tables<
     : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R;
-      }
-      ? R
-      : never
+      Row: infer R;
+    }
+    ? R
+    : never
     : never;
 
 export type TablesInsert<
@@ -68,16 +130,16 @@ export type TablesInsert<
   schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I;
+    Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I;
-      }
-      ? I
-      : never
+      Insert: infer I;
+    }
+    ? I
+    : never
     : never;
 
 export type TablesUpdate<
@@ -92,16 +154,16 @@ export type TablesUpdate<
   schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U;
+    Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U;
-      }
-      ? U
-      : never
+      Update: infer U;
+    }
+    ? U
+    : never
     : never;
 
 export type Enums<
