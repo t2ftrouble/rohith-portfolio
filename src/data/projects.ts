@@ -6,7 +6,6 @@ import oneLastDayPoster from "@/assets/one-last-day-poster.webp";
 import oneLastDayBefore from "@/assets/one-last-day-before-cg.webp";
 import oneLastDayAfter from "@/assets/one-last-day-after-cg.webp";
 import { resolveImageUrl } from "@/lib/asset-resolver";
-import { supabase } from "@/integrations/supabase/client";
 
 export type Project = {
   slug: string;
@@ -179,34 +178,23 @@ function transformSupabaseProject(p: any): Project {
   };
 }
 
-// Get projects from Supabase (works universally in SSR, server, and client)
+// Get projects from API route (works universally in SSR, server, and client)
 export async function getProjects(): Promise<Project[]> {
   try {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .order("number", { ascending: true });
+    const response = await fetch("/api/projects");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error("Failed to fetch projects from API:", errorData);
+      throw new Error(errorData.error || "Failed to fetch projects");
+    }
+    const data = await response.json();
 
-    if (error) {
-      console.error("Error loading projects from Supabase SDK:", error);
-      // Try API route fallback if fetch is available
-      if (typeof window !== "undefined") {
-        const response = await fetch("/api/projects");
-        if (response.ok) {
-          const apiData = await response.json();
-          if (apiData.projects && Array.isArray(apiData.projects)) {
-            return apiData.projects.map(transformSupabaseProject);
-          }
-        }
-      }
-      throw new Error(error.message || "Failed to load projects");
+    if (!data.projects || !Array.isArray(data.projects)) {
+      console.error("Invalid response format from API:", data);
+      throw new Error("Invalid response format from API");
     }
 
-    if (!data || !Array.isArray(data)) {
-      throw new Error("Invalid projects data from database");
-    }
-
-    return data.map(transformSupabaseProject);
+    return data.projects.map(transformSupabaseProject);
   } catch (error) {
     console.error("getProjects error:", error);
     throw error;
@@ -217,20 +205,6 @@ export async function getProjects(): Promise<Project[]> {
 export const projects = defaultProjects;
 
 export const getProject = async (slug: string): Promise<Project | undefined> => {
-  try {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("slug", slug)
-      .single();
-
-    if (!error && data) {
-      return transformSupabaseProject(data);
-    }
-  } catch (err) {
-    console.warn("getProject single fetch fallback to list:", err);
-  }
-
   const projectsList = await getProjects();
   return projectsList.find((p) => p.slug === slug);
 };
