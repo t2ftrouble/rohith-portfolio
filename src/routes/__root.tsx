@@ -85,14 +85,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Rohith V | Filmmaker | Writer | Editor | VFX/CG Artist" },
+      { title: "Rohith V — Filmmaker, Writer, Editor & VFX Artist" },
       {
         name: "description",
         content:
           "Rohith V is a Visual Communication student and Filmmaker, Writer, Editor and VFX/CG Artist based in Chennai.",
       },
       { name: "author", content: "Rohith V" },
-      { property: "og:title", content: "Rohith V | Filmmaker | Writer | Editor | VFX/CG Artist" },
+      { property: "og:title", content: "Rohith V — Filmmaker, Writer, Editor & VFX Artist" },
       {
         property: "og:description",
         content:

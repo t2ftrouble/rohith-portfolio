@@ -31,9 +31,9 @@ export const Route = createFileRoute("/api/upload")({
         }
         
         // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
         if (!allowedTypes.includes(file.type)) {
-          return new Response(JSON.stringify({ error: 'Invalid file type. Only JPG, PNG, and WEBP are allowed.' }), {
+          return new Response(JSON.stringify({ error: 'Invalid file type. Only JPG, PNG, WEBP, and PDF are allowed.' }), {
             status: 400,
             headers: { 'Content-Type': 'application/json' }
           });

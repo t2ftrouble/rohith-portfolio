@@ -20,34 +20,34 @@ import defaultCreative1 from "@/assets/1-creative.jpg";
 import defaultCreative2 from "@/assets/2-cerative.jpg";
 import defaultCreative3 from "@/assets/3 creative.jpg";
 
+import { getSeoSettings, defaultSeoSettings, type SeoSettingsData } from "@/lib/seo-settings";
+
 export const Route = createFileRoute("/digital-marketing")({
   loader: async () => {
     try {
-      const siteImages = await getSiteImages();
-      return { siteImages };
+      const [siteImages, seo] = await Promise.all([
+        getSiteImages(),
+        getSeoSettings(),
+      ]);
+      return { siteImages, seoSettings: seo };
     } catch {
-      return { siteImages: defaultSiteImages };
+      return { siteImages: defaultSiteImages, seoSettings: defaultSeoSettings };
     }
   },
-  head: () => ({
-    meta: [
-      { title: "Digital Marketing & Video Ads — Rohith V | Cinematic Commercials" },
-      {
-        name: "description",
-        content:
-          "Cinematic commercials, social reels, and high-converting video ads crafted by a filmmaker. Storytelling that stops the scroll for brands in Chennai and worldwide.",
-      },
-      {
-        property: "og:title",
-        content: "Digital Marketing & Video Ads — Rohith V | Cinematic Commercials",
-      },
-      {
-        property: "og:description",
-        content:
-          "Cinematic commercials that stop the scroll. Video ads crafted by a filmmaker — not a template agency.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seoSettings || defaultSeoSettings;
+    const title = seo.digitalMarketingTitle || "Digital Marketing & Video Ads — Rohith V | Cinematic Commercials";
+    const description = seo.digitalMarketingDescription || "Cinematic commercials, social reels, and high-converting video ads crafted by a filmmaker.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: seo.globalOgImage },
+      ],
+    };
+  },
   component: DigitalMarketing,
 });
 
@@ -306,9 +306,9 @@ function DigitalMarketing() {
                       alt={format.title}
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full object-cover object-center opacity-85 transition-all duration-700 ease-out group-hover:scale-105 group-hover:opacity-100"
+                      className="h-full w-full object-cover object-center opacity-85 transition-all duration-700 ease-out group-hover:scale-[1.04] group-hover:opacity-100"
                     />
-                    <div className="vignette" />
+                    <div className="vignette transition-opacity duration-500 group-hover:opacity-75" />
                     <div className="scanlines absolute inset-0 opacity-20 pointer-events-none" />
                     
                     <span className="label-track absolute top-4 left-4 bg-charcoal/85 border border-gold/40 px-3 py-1 !text-[9px] text-gold backdrop-blur-sm shadow-md">
@@ -324,10 +324,14 @@ function DigitalMarketing() {
                         <span className="h-px flex-1 bg-border/60" />
                       </div>
                       
-                      <h3 className="title-card mt-4 text-2xl md:text-4xl text-ivory group-hover:text-gold transition-colors">
+                      <h3 className="title-card mt-4 text-2xl md:text-4xl text-ivory group-hover:text-gold transition-all duration-300 group-hover:translate-x-1.5">
                         {format.title}
                       </h3>
-                      <p className="label-track mt-2 text-gold/90">{format.subtitle}</p>
+                      
+                      {/* Expanding Gold Accent Line */}
+                      <div className="gold-rule mt-3 h-[1px] w-12 opacity-35 group-hover:w-28 group-hover:opacity-100 transition-all duration-500 ease-out" />
+                      
+                      <p className="label-track mt-3 text-gold/90">{format.subtitle}</p>
                       
                       <p className="mt-5 text-sm md:text-base text-muted-foreground leading-relaxed">
                         {format.desc}

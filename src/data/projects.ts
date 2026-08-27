@@ -37,6 +37,7 @@ export type Project = {
   client?: string | undefined;
   emotionalDescriptor?: string | undefined;
   whatIFelt?: string | undefined;
+  publishStatus?: "PUBLISHED" | "DRAFT" | undefined;
 };
 
 // Default fallback projects
@@ -177,11 +178,12 @@ function transformSupabaseProject(p: any): Project {
     client: p.client || undefined,
     emotionalDescriptor: p.emotional_descriptor || undefined,
     whatIFelt: p.what_i_felt || undefined,
+    publishStatus: (p.publish_status === "DRAFT" || p.status === "DRAFT") ? "DRAFT" : "PUBLISHED",
   };
 }
 
 // Get projects directly from Supabase (works universally in SSR, serverless, and browser client)
-export async function getProjects(): Promise<Project[]> {
+export async function getProjects(includeDrafts = false): Promise<Project[]> {
   try {
     const { data, error } = await supabase
       .from("projects")
@@ -189,7 +191,8 @@ export async function getProjects(): Promise<Project[]> {
       .order("number", { ascending: true });
 
     if (!error && data && data.length > 0) {
-      return data.map(transformSupabaseProject);
+      const transformed = data.map(transformSupabaseProject);
+      return includeDrafts ? transformed : transformed.filter((p) => p.publishStatus !== "DRAFT");
     }
 
     if (error) {
@@ -202,7 +205,8 @@ export async function getProjects(): Promise<Project[]> {
       if (response.ok) {
         const json = await response.json();
         if (json.projects && Array.isArray(json.projects)) {
-          return json.projects.map(transformSupabaseProject);
+          const transformed = json.projects.map(transformSupabaseProject);
+          return includeDrafts ? transformed : transformed.filter((p: Project) => p.publishStatus !== "DRAFT");
         }
       }
     }
@@ -211,7 +215,8 @@ export async function getProjects(): Promise<Project[]> {
       throw error;
     }
 
-    return (data || []).map(transformSupabaseProject);
+    const transformed = (data || []).map(transformSupabaseProject);
+    return includeDrafts ? transformed : transformed.filter((p: Project) => p.publishStatus !== "DRAFT");
   } catch (error) {
     console.error("getProjects error:", error);
     throw error;

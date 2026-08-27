@@ -36,6 +36,10 @@ function formatProjectForSupabase(project: any) {
     supabaseProject["gallery_images"] = Array.isArray(project.galleryImages) ? project.galleryImages : [];
   }
 
+  if (project.publishStatus !== undefined) {
+    supabaseProject["publish_status"] = project.publishStatus === "DRAFT" ? "DRAFT" : "PUBLISHED";
+  }
+
   return supabaseProject;
 }
 

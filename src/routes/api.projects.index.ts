@@ -27,6 +27,7 @@ function formatProjectForSupabase(project: any) {
     emotional_descriptor: project.emotionalDescriptor || null,
     what_i_felt: project.whatIFelt || null,
     gallery_images: Array.isArray(project.galleryImages) ? project.galleryImages : [],
+    publish_status: project.publishStatus === "DRAFT" ? "DRAFT" : "PUBLISHED",
   };
 
   return supabaseProject;

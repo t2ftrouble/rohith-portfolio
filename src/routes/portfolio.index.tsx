@@ -8,32 +8,44 @@ import { Reveal } from "@/components/Reveal";
 import { FocusReveal } from "@/components/FocusReveal";
 import { Stage } from "@/components/three/Stage";
 import { VideoModal } from "@/components/VideoModal";
+import { getShowreel, defaultShowreel, type ShowreelData } from "@/lib/showreel";
+import { getSeoSettings, defaultSeoSettings, type SeoSettingsData } from "@/lib/seo-settings";
 
 export const Route = createFileRoute("/portfolio/")({
   loader: async () => {
     try {
-      const dynamicProjects = await getProjects();
-      return { projects: dynamicProjects };
+      const [dynamicProjects, showreelData, seo] = await Promise.all([
+        getProjects(),
+        getShowreel(),
+        getSeoSettings(),
+      ]);
+      return {
+        projects: dynamicProjects,
+        showreel: showreelData,
+        seoSettings: seo,
+      };
     } catch {
-      return { projects: [] };
+      return {
+        projects: [],
+        showreel: defaultShowreel,
+        seoSettings: defaultSeoSettings,
+      };
     }
   },
-  head: () => ({
-    meta: [
-      { title: "Selected Work — Rohith V | Filmmaker" },
-      {
-        name: "description",
-        content:
-          "Selected film work by Rohith V — short films, pilot films, CG and screenplay credits presented as cinematic chapters.",
-      },
-      { property: "og:title", content: "Selected Work — Rohith V | Filmmaker" },
-      {
-        property: "og:description",
-        content:
-          "Film chapters: One Last Day, Kadalar, Radhal and Toothpaste — work by Rohith V, filmmaker based in Chennai.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seoSettings || defaultSeoSettings;
+    const title = seo.portfolioTitle || "Selected Work — Rohith V | Filmmaker";
+    const description = seo.portfolioDescription || "Selected film work by Rohith V — short films, pilot films, CG and screenplay credits.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: seo.globalOgImage },
+      ],
+    };
+  },
   component: Portfolio,
 });
 
@@ -52,14 +64,18 @@ function Portfolio() {
     "all" | "FILMMAKING" | "VFX / CG" | "EDITING" | "DESIGN" | "CONTENT"
   >("all");
   const [showreelOpen, setShowreelOpen] = useState(false);
+  const [showreel, setShowreel] = useState<ShowreelData>(
+    loaderData?.showreel || defaultShowreel
+  );
   const [projects, setProjects] = useState<Project[]>(
     loaderData?.projects && loaderData.projects.length > 0 ? loaderData.projects : []
   );
 
-  // Load / reload projects from Supabase on mount
+  // Load / reload projects & showreel on mount
   useEffect(() => {
-    getProjects().then((data) => {
+    Promise.all([getProjects(), getShowreel()]).then(([data, sr]) => {
       if (data && data.length > 0) setProjects(data);
+      if (sr) setShowreel(sr);
     });
   }, []);
 
@@ -78,14 +94,16 @@ function Portfolio() {
     };
   }, []);
 
-  const filteredProjects =
-    activeFilter === "all" ? projects : projects.filter((p) => p.category === activeFilter);
+  const publishedProjects = projects.filter((p) => p.publishStatus !== "DRAFT");
 
-  const featuredProject = projects.find((p) => p.slug === "one-last-day") || projects[0];
+  const filteredProjects =
+    activeFilter === "all" ? publishedProjects : publishedProjects.filter((p) => p.category === activeFilter);
+
+  const featuredProject = publishedProjects.find((p) => p.slug === "one-last-day") || publishedProjects[0];
   const otherProjects =
     activeFilter === "all"
-      ? projects.filter((p) => p.slug !== (featuredProject?.slug || "one-last-day"))
-      : projects.filter((p) => p.category === activeFilter && p.slug !== (featuredProject?.slug || "one-last-day"));
+      ? publishedProjects.filter((p) => p.slug !== (featuredProject?.slug || "one-last-day"))
+      : publishedProjects.filter((p) => p.category === activeFilter && p.slug !== (featuredProject?.slug || "one-last-day"));
 
   return (
     <section className="relative">
@@ -141,8 +159,8 @@ function Portfolio() {
             {filters.map((filter) => {
               const count =
                 filter.id === "all"
-                  ? projects.length
-                  : projects.filter((p) => p.category === filter.id).length;
+                  ? publishedProjects.length
+                  : publishedProjects.filter((p) => p.category === filter.id).length;
 
               return (
                 <button
@@ -179,25 +197,27 @@ function Portfolio() {
           </div>
         </Reveal>
 
-        {/* VFX Showreel */}
-        {activeFilter === "all" || activeFilter === "VFX / CG" ? (
+        {/* Dynamic Showreel Section (Gracefully hidden if disabled or empty) */}
+        {showreel.enabled && showreel.videoId && (activeFilter === "all" || activeFilter === (showreel.category || "VFX / CG")) ? (
           <Reveal delay={0.2} className="mt-16">
             <div className="border border-border/80 bg-navy/20 p-6 md:p-8 transition-colors hover:border-gold/40">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="label-track text-gold">VFX / CG</p>
-                  <h3 className="title-card mt-2 text-2xl text-ivory md:text-3xl">VFX Showreel</h3>
+                  <p className="label-track text-gold">{showreel.category || "VFX / CG"}</p>
+                  <h3 className="title-card mt-2 text-2xl text-ivory md:text-3xl">
+                    {showreel.title || "VFX Showreel"}
+                  </h3>
                   <p className="mt-2 text-sm text-muted-foreground md:text-base">
-                    Selected visual effects and CG work
+                    {showreel.description || "Selected visual effects and CG work"}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowreelOpen(true)}
                   data-cursor="play reel"
                   data-magnetic="true"
-                  className="label-track border border-gold/60 px-6 py-4 !text-[10px] !text-gold transition-all hover:bg-gold hover:!text-charcoal inline-block shadow-sm"
+                  className="label-track border border-gold/60 px-6 py-4 !text-[10px] !text-gold transition-all hover:bg-gold hover:!text-charcoal inline-block shadow-sm cursor-pointer"
                 >
-                  WATCH VFX SHOWREEL →
+                  WATCH SHOWREEL →
                 </button>
               </div>
             </div>
@@ -273,8 +293,8 @@ function Portfolio() {
       <VideoModal
         isOpen={showreelOpen}
         onClose={() => setShowreelOpen(false)}
-        videoId="lYLTsC9RM9U"
-        title="VFX Showreel"
+        videoId={showreel.videoId || "lYLTsC9RM9U"}
+        title={showreel.title || "VFX Showreel"}
       />
     </section>
   );

@@ -39,6 +39,7 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
     client: project?.client || "",
     emotionalDescriptor: project?.emotionalDescriptor || "",
     whatIFelt: project?.whatIFelt || "",
+    publishStatus: (project?.publishStatus || "PUBLISHED") as "PUBLISHED" | "DRAFT",
   });
 
   const [coverImage, setCoverImage] = useState<string>(project?.image || "");
@@ -74,6 +75,7 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
         client: project.client || "",
         emotionalDescriptor: project.emotionalDescriptor || "",
         whatIFelt: project.whatIFelt || "",
+        publishStatus: (project.publishStatus || "PUBLISHED") as "PUBLISHED" | "DRAFT",
       });
       setCoverImage(project.image || "");
       setPosterImage(project.posterImage || "");
@@ -153,8 +155,7 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
     return match && match[1] ? match[1] : input.trim();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitWithStatus = (overrideStatus?: "PUBLISHED" | "DRAFT") => {
     setFormError(null);
 
     if (!formData.title.trim()) {
@@ -173,6 +174,8 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
       .filter((line) => line.length > 0);
 
     const videoId = cleanVideoId(formData.videoId);
+
+    const publishStatus = overrideStatus || formData.publishStatus;
 
     const payload: ProjectFormData = {
       slug: formData.slug.trim() || slugify(formData.title),
@@ -198,9 +201,15 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
       galleryImages: galleryImages.filter((img) => Boolean(img && img.trim())),
       emotionalDescriptor: formData.emotionalDescriptor.trim() || null,
       whatIFelt: formData.whatIFelt.trim() || null,
+      publishStatus,
     };
 
     onSave(payload);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitWithStatus();
   };
 
   return (
@@ -1075,12 +1084,21 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
         {/* SUBMIT BUTTONS */}
         <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border">
           <button
-            type="submit"
+            type="button"
+            onClick={() => submitWithStatus("PUBLISHED")}
             disabled={isLoading || isUploading}
             className="label-track bg-gold px-8 py-5 !text-[11px] !text-charcoal font-bold hover:bg-gold/90 transition-all shadow-xl min-h-[48px] flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             <CheckCircle2 size={16} />
-            {isLoading ? "Saving to Supabase..." : project ? "SAVE & UPDATE PROJECT" : "PUBLISH NEW PROJECT"}
+            {isLoading ? "Saving to Supabase..." : project ? "SAVE & PUBLISH PROJECT" : "PUBLISH NEW PROJECT"}
+          </button>
+          <button
+            type="button"
+            onClick={() => submitWithStatus("DRAFT")}
+            disabled={isLoading || isUploading}
+            className="label-track border border-amber-500/80 bg-amber-500/10 px-6 py-5 !text-[10px] text-amber-400 hover:bg-amber-500/20 transition-all min-h-[48px] disabled:opacity-50 cursor-pointer"
+          >
+            Save as Draft
           </button>
           <button
             type="button"

@@ -185,14 +185,34 @@
   }
 }
 
-@keyframes reel-spin {
-  to {
-    transform: rotate(360deg);
+@utility reel-spin {
+  animation: reel-spin 14s linear infinite;
+}
+
+@keyframes focus-pull {
+  0% {
+    filter: blur(10px);
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  100% {
+    filter: blur(0);
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-@utility reel-spin {
-  animation: reel-spin 14s linear infinite;
+.focus-pull-entrance {
+  animation: focus-pull 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.gold-edge-glow {
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.gold-edge-glow:hover {
+  border-color: rgba(201, 164, 76, 0.8);
+  box-shadow: 0 0 24px rgba(201, 164, 76, 0.22);
 }
 
 /* Subtle cinematic camera breathing & anamorphic flare animations */

@@ -42,9 +42,12 @@ export function ProjectChapter({ project, index }: { project: Project; index: nu
             ) : null}
           </div>
 
-          <h3 className="title-card mt-3 text-3xl text-ivory transition-colors duration-300 group-hover:text-gold md:text-5xl">
+          <h3 className="title-card mt-3 text-3xl text-ivory transition-all duration-300 group-hover:text-gold group-hover:tracking-[0.08em] md:text-5xl">
             {project.title}
           </h3>
+
+          {/* Expanding Gold Accent Line */}
+          <div className="gold-rule mt-4 h-[1px] w-12 opacity-30 group-hover:w-28 group-hover:opacity-100 transition-all duration-500 ease-out" />
 
           {project.emotionalDescriptor && (
             <motion.p
@@ -52,7 +55,7 @@ export function ProjectChapter({ project, index }: { project: Project; index: nu
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.6 }}
-              className="mt-2 text-sm text-gold/80 italic md:text-base"
+              className="mt-3 text-sm text-gold/80 italic md:text-base"
             >
               {project.emotionalDescriptor}
             </motion.p>
@@ -65,7 +68,7 @@ export function ProjectChapter({ project, index }: { project: Project; index: nu
             <span className="label-track !tracking-[0.3em] text-ivory/80 transition-colors duration-300 group-hover:text-gold">
               View film
             </span>
-            <span className="text-gold transition-transform duration-300 ease-out group-hover:translate-x-1.5">
+            <span className="text-gold transition-transform duration-300 ease-out group-hover:translate-x-2">
               →
             </span>
           </div>

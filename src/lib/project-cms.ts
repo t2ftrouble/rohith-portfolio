@@ -32,6 +32,7 @@ export type ProjectFormData = {
   afterImage?: string | null | undefined; // After image URL
   emotionalDescriptor?: string | null | undefined; // Short emotional tagline
   whatIFelt?: string | null | undefined; // Personal creative note
+  publishStatus?: "PUBLISHED" | "DRAFT" | undefined; // Publishing state
 };
 
 export type ProjectCMSData = {
@@ -96,6 +97,7 @@ export async function getProjects(): Promise<ProjectCMSData[]> {
       afterImage: p.after_image || "",
       emotionalDescriptor: p.emotional_descriptor || "",
       whatIFelt: p.what_i_felt || "",
+      publishStatus: (p.publish_status === "DRAFT" || p.status === "DRAFT") ? "DRAFT" : "PUBLISHED",
     }));
   } catch (error) {
     console.error("Error loading projects from Supabase:", error);
@@ -191,11 +193,15 @@ export function cmsToProject(cms: ProjectCMSData): Project {
     client: cms.client ? cms.client : undefined,
     emotionalDescriptor: cms.emotionalDescriptor ? cms.emotionalDescriptor : undefined,
     whatIFelt: cms.whatIFelt ? cms.whatIFelt : undefined,
+    publishStatus: cms.publishStatus || "PUBLISHED",
   };
 }
 
-// Get projects as Project array for display components
-export async function getProjectsForDisplay(): Promise<Project[]> {
+// Get projects as Project array for display components (filtering published by default)
+export async function getProjectsForDisplay(includeDrafts = false): Promise<Project[]> {
   const cmsProjects = await getProjects();
-  return cmsProjects.map(cmsToProject);
+  const filtered = includeDrafts
+    ? cmsProjects
+    : cmsProjects.filter((p) => p.publishStatus !== "DRAFT");
+  return filtered.map(cmsToProject);
 }

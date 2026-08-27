@@ -1,11 +1,33 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
-import { Plus, RefreshCw, Film, Share2, Image as ImageIcon } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  Film,
+  Share2,
+  Image as ImageIcon,
+  LayoutDashboard,
+  FileText,
+  Sparkles,
+  Eye,
+  Inbox,
+  Search,
+  Menu,
+  X,
+} from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { ProjectForm } from "@/components/admin/ProjectForm";
 import { ProjectList } from "@/components/admin/ProjectList";
 import { SocialLinksForm } from "@/components/admin/SocialLinksForm";
 import { SiteImagesForm } from "@/components/admin/SiteImagesForm";
+import { AdminDashboardOverview } from "@/components/admin/AdminDashboardOverview";
+import { HomepageContentForm } from "@/components/admin/HomepageContentForm";
+import { FeaturedProjectsForm } from "@/components/admin/FeaturedProjectsForm";
+import { ShowreelForm } from "@/components/admin/ShowreelForm";
+import { EnquiriesInbox } from "@/components/admin/EnquiriesInbox";
+import { ResumeManager } from "@/components/admin/ResumeManager";
+import { SeoManagerForm } from "@/components/admin/SeoManagerForm";
+import { getEnquiries } from "@/lib/enquiries";
 import type { ProjectCMSData, ProjectFormData } from "@/lib/project-cms";
 import {
   getProjects,
@@ -17,12 +39,24 @@ import {
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin — Rohith V" },
+      { title: "Admin CMS — Rohith V" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: Admin,
 });
+
+export type AdminTab =
+  | "dashboard"
+  | "projects"
+  | "media"
+  | "social"
+  | "homepage"
+  | "featured"
+  | "showreel"
+  | "enquiries"
+  | "resume"
+  | "seo";
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -35,7 +69,9 @@ function Admin() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"projects" | "social" | "media">("projects");
+  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadEnquiriesCount, setUnreadEnquiriesCount] = useState(0);
 
   const loadProjects = useCallback(async () => {
     setIsLoading(true);
@@ -51,6 +87,16 @@ function Admin() {
     }
   }, []);
 
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const enquiries = await getEnquiries();
+      const count = enquiries.filter((e) => e.status === "NEW").length;
+      setUnreadEnquiriesCount(count);
+    } catch {
+      // Ignore background failure
+    }
+  }, []);
+
   // Check persistent session on mount
   useEffect(() => {
     async function checkAuth() {
@@ -61,7 +107,7 @@ function Admin() {
         const data = await response.json();
         if (data.authenticated) {
           setIsAuthenticated(true);
-          await loadProjects();
+          await Promise.all([loadProjects(), loadUnreadCount()]);
         }
       } catch (err) {
         console.warn("Session check failed:", err);
@@ -71,7 +117,7 @@ function Admin() {
     }
 
     checkAuth();
-  }, [loadProjects]);
+  }, [loadProjects, loadUnreadCount]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +139,7 @@ function Admin() {
       if (data.success) {
         setIsAuthenticated(true);
         setPassword("");
-        await loadProjects();
+        await Promise.all([loadProjects(), loadUnreadCount()]);
       } else {
         setError(data.error || "Invalid password");
       }
@@ -135,7 +181,7 @@ function Admin() {
       } else {
         console.log("Creating new project");
         await addProject(projectData);
-        setSaveSuccess(`✓ Project "${projectData.title}" published successfully`);
+        setSaveSuccess(`✓ Project "${projectData.title}" created successfully`);
       }
       await loadProjects();
       setEditingProject(null);
@@ -145,6 +191,17 @@ function Admin() {
       setError(err instanceof Error ? err.message : "Failed to save project. Check required fields.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleTogglePublish = async (project: ProjectCMSData) => {
+    const nextStatus = project.publishStatus === "DRAFT" ? "PUBLISHED" : "DRAFT";
+    try {
+      await updateProject(project.id, { publishStatus: nextStatus });
+      setSaveSuccess(`✓ "${project.title}" is now ${nextStatus}`);
+      await loadProjects();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to toggle publishing status");
     }
   };
 
@@ -178,6 +235,31 @@ function Admin() {
     setError("");
   };
 
+  interface AdminNavItem {
+    id: AdminTab;
+    label: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    badge?: boolean;
+  }
+
+  const navItems: AdminNavItem[] = [
+    { id: "dashboard", label: "DASHBOARD", icon: LayoutDashboard },
+    { id: "projects", label: `PROJECTS (${projects.length})`, icon: Film },
+    { id: "media", label: "WEBSITE MEDIA", icon: ImageIcon },
+    { id: "social", label: "SOCIAL LINKS", icon: Share2 },
+    { id: "homepage", label: "HOMEPAGE", icon: FileText },
+    { id: "featured", label: "FEATURED WORK", icon: Sparkles },
+    { id: "showreel", label: "SHOWREEL", icon: Eye },
+    {
+      id: "enquiries",
+      label: unreadEnquiriesCount > 0 ? `ENQUIRIES (${unreadEnquiriesCount})` : "ENQUIRIES",
+      icon: Inbox,
+      badge: unreadEnquiriesCount > 0,
+    },
+    { id: "resume", label: "RESUME", icon: FileText },
+    { id: "seo", label: "SEO", icon: Search },
+  ];
+
   // Loading state while checking auth
   if (isCheckingAuth) {
     return (
@@ -201,7 +283,7 @@ function Admin() {
                 <p className="label-track text-gold">System Access</p>
                 <h1 className="title-card mt-3 text-3xl text-ivory">Admin CMS</h1>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Sign in to edit portfolio projects, media assets & settings
+                  Sign in to manage projects, copy, showreel, resume, enquiries & SEO
                 </p>
               </div>
 
@@ -234,7 +316,7 @@ function Admin() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="label-track w-full bg-gold py-3.5 text-center !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                  className="label-track w-full bg-gold py-3.5 text-center !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg min-h-[44px]"
                 >
                   {isLoading ? (
                     <>
@@ -265,85 +347,120 @@ function Admin() {
   // Authenticated Admin Dashboard
   return (
     <section className="min-h-screen bg-charcoal">
-      <div className="mx-auto max-w-[1600px] px-6 py-20 md:px-12 md:py-28">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-12 md:px-12 md:py-20">
         <Reveal>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 border-b border-border/60 pb-6">
+          {/* Header Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-6">
             <div>
-              <p className="label-track text-gold">Admin CMS</p>
-              <h1 className="title-card mt-2 text-4xl text-ivory md:text-6xl">
+              <div className="flex items-center gap-2">
+                <p className="label-track text-gold">Admin CMS</p>
+                {unreadEnquiriesCount > 0 && (
+                  <span className="label-track !text-[8px] bg-amber-500 text-charcoal font-bold px-2 py-0.5 rounded-full animate-pulse">
+                    {unreadEnquiriesCount} NEW ENQUIRIES
+                  </span>
+                )}
+              </div>
+              <h1 className="title-card mt-2 text-3xl sm:text-4xl text-ivory md:text-5xl">
                 Content Management
               </h1>
-              <p className="mt-2 text-xs text-muted-foreground md:text-sm">
-                Connected to Supabase. Edits update production instantly.
+              <p className="mt-1 text-xs text-muted-foreground">
+                Connected to Supabase. Real-time updates active across production.
               </p>
             </div>
-            <div className="flex items-center gap-3">
+
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={loadProjects}
                 disabled={isLoading}
-                className="label-track border border-border px-4 py-3 !text-[9px] text-ivory hover:text-gold hover:border-gold/60 transition-colors flex items-center gap-1.5"
+                className="label-track border border-border px-3.5 py-2.5 !text-[9px] text-ivory hover:text-gold hover:border-gold/60 transition-colors flex items-center gap-1.5 rounded min-h-[44px] cursor-pointer"
                 title="Refresh projects from Supabase"
               >
                 <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
               </button>
               <Link
                 to="/portfolio"
-                className="label-track border border-gold/60 px-5 py-3 !text-[9px] !text-gold hover:bg-gold hover:!text-charcoal transition-colors"
+                target="_blank"
+                className="label-track border border-gold/60 px-4 py-2.5 !text-[9px] !text-gold hover:bg-gold hover:!text-charcoal transition-colors rounded min-h-[44px] inline-flex items-center"
               >
-                View Portfolio →
+                View Site ↗
               </Link>
               <button
                 onClick={handleLogout}
-                className="label-track border border-red-500/60 px-4 py-3 !text-[9px] !text-red-400 hover:bg-red-500/10 transition-colors"
+                className="label-track border border-red-500/60 px-4 py-2.5 !text-[9px] !text-red-400 hover:bg-red-500/10 transition-colors rounded min-h-[44px] cursor-pointer"
               >
                 Logout
               </button>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
+          {/* Navigation Bar / Drawer for Mobile & Desktop */}
           {!isAdding && !editingProject && (
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-8 border-b border-border/40 pb-4">
-              <button
-                onClick={() => setActiveTab("projects")}
-                className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 text-xs font-mono tracking-wider transition-all cursor-pointer ${
-                  activeTab === "projects"
-                    ? "border-b-2 border-gold text-gold font-bold bg-gold/5"
-                    : "text-muted-foreground hover:text-ivory"
-                }`}
-              >
-                <Film size={15} />
-                <span>FILM & VFX PROJECTS ({projects.length})</span>
-              </button>
-              <button
-                onClick={() => setActiveTab("media")}
-                className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 text-xs font-mono tracking-wider transition-all cursor-pointer ${
-                  activeTab === "media"
-                    ? "border-b-2 border-gold text-gold font-bold bg-gold/5"
-                    : "text-muted-foreground hover:text-ivory"
-                }`}
-              >
-                <ImageIcon size={15} />
-                <span>WEBSITE MEDIA & ASSETS</span>
-              </button>
-              <button
-                onClick={() => setActiveTab("social")}
-                className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 text-xs font-mono tracking-wider transition-all cursor-pointer ${
-                  activeTab === "social"
-                    ? "border-b-2 border-gold text-gold font-bold bg-gold/5"
-                    : "text-muted-foreground hover:text-ivory"
-                }`}
-              >
-                <Share2 size={15} />
-                <span>SOCIAL MEDIA LINKS</span>
-              </button>
+            <div className="mb-8">
+              {/* Mobile Drawer Button */}
+              <div className="md:hidden mb-4">
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="w-full flex items-center justify-between p-3.5 bg-navy/60 border border-gold/40 rounded text-xs font-mono text-gold min-h-[44px]"
+                >
+                  <span className="flex items-center gap-2">
+                    <LayoutDashboard size={14} />
+                    <span>Tab: {activeTab.toUpperCase()}</span>
+                  </span>
+                  {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+                </button>
+
+                {mobileMenuOpen && (
+                  <div className="mt-2 p-2 bg-navy/90 border border-border rounded space-y-1">
+                    {navItems.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id as AdminTab);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-3 text-left text-xs font-mono rounded min-h-[44px] ${
+                          activeTab === tab.id
+                            ? "bg-gold text-charcoal font-bold"
+                            : "text-ivory/80 hover:bg-charcoal"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <tab.icon size={14} />
+                          <span>{tab.label}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Horizontal Tabs */}
+              <div className="hidden md:flex flex-wrap items-center gap-1.5 border-b border-border/40 pb-3">
+                {navItems.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as AdminTab)}
+                    className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-mono tracking-wider transition-all rounded-sm cursor-pointer select-none min-h-[44px] ${
+                      activeTab === tab.id
+                        ? "border-b-2 border-gold text-gold font-bold bg-gold/10 shadow-sm"
+                        : "text-muted-foreground hover:text-ivory hover:bg-navy/30"
+                    }`}
+                  >
+                    <tab.icon size={14} />
+                    <span>{tab.label}</span>
+                    {tab.badge && (
+                      <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </Reveal>
 
         {saveSuccess && (
-          <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-sm flex items-center justify-between">
+          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded text-emerald-400 text-sm flex items-center justify-between">
             <span>{saveSuccess}</span>
             <button onClick={() => setSaveSuccess(null)} className="text-xs hover:underline">
               Dismiss
@@ -360,6 +477,7 @@ function Admin() {
           </div>
         )}
 
+        {/* Dynamic Section Views */}
         {isAdding || editingProject ? (
           <ProjectForm
             project={editingProject}
@@ -367,20 +485,43 @@ function Admin() {
             onCancel={handleCancel}
             isLoading={isSaving}
           />
+        ) : activeTab === "dashboard" ? (
+          <AdminDashboardOverview
+            projects={projects}
+            unreadEnquiriesCount={unreadEnquiriesCount}
+            onNavigateTab={(tab) => setActiveTab(tab as AdminTab)}
+            onAddNewProject={() => {
+              setEditingProject(null);
+              setIsAdding(true);
+              setError("");
+            }}
+          />
+        ) : activeTab === "homepage" ? (
+          <HomepageContentForm />
+        ) : activeTab === "featured" ? (
+          <FeaturedProjectsForm projects={projects} />
+        ) : activeTab === "showreel" ? (
+          <ShowreelForm />
+        ) : activeTab === "enquiries" ? (
+          <EnquiriesInbox onUnreadCountChange={setUnreadEnquiriesCount} />
+        ) : activeTab === "resume" ? (
+          <ResumeManager />
+        ) : activeTab === "seo" ? (
+          <SeoManagerForm />
         ) : activeTab === "social" ? (
           <SocialLinksForm />
         ) : activeTab === "media" ? (
           <SiteImagesForm />
         ) : (
           <>
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <button
                 onClick={() => {
                   setEditingProject(null);
                   setIsAdding(true);
                   setError("");
                 }}
-                className="label-track bg-gold px-8 py-4 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-colors flex items-center gap-2 cursor-pointer shadow-lg"
+                className="label-track bg-gold px-8 py-4 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-colors flex items-center gap-2 cursor-pointer shadow-lg min-h-[44px] rounded"
               >
                 <Plus size={16} />
                 Add New Project
@@ -394,6 +535,7 @@ function Admin() {
               projects={projects}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onTogglePublish={handleTogglePublish}
             />
           </>
         )}

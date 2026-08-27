@@ -6,9 +6,10 @@ interface ProjectListProps {
   projects: ProjectCMSData[];
   onEdit: (project: ProjectCMSData) => void;
   onDelete: (id: string) => void;
+  onTogglePublish?: (project: ProjectCMSData) => void;
 }
 
-export function ProjectList({ projects, onEdit, onDelete }: ProjectListProps) {
+export function ProjectList({ projects, onEdit, onDelete, onTogglePublish }: ProjectListProps) {
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       "FILMMAKING": "text-gold",
@@ -30,103 +31,140 @@ export function ProjectList({ projects, onEdit, onDelete }: ProjectListProps) {
 
   return (
     <div className="space-y-4">
-      {projects.map((project) => (
-        <div
-          key={project.id}
-          className="border border-border bg-navy/20 p-5 md:p-6 hover:border-gold/50 transition-colors rounded"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-            {/* Thumbnail Preview */}
-            <div className="md:col-span-3">
-              <div className="relative aspect-video w-full overflow-hidden rounded border border-border bg-charcoal">
-                {project.image ? (
-                  <img
-                    src={resolveImageUrl(project.image)}
-                    alt={project.title}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-muted-foreground text-xs">
-                    No image
-                  </div>
-                )}
-                {project.hasVideo && (
-                  <span className="absolute top-1.5 right-1.5 bg-gold text-charcoal p-1 rounded-full shadow" title="Has Video">
-                    <Video size={12} />
-                  </span>
-                )}
-                {project.showBeforeAfter && (
-                  <span className="absolute bottom-1.5 right-1.5 bg-cyan-500 text-charcoal p-1 rounded-full shadow" title="Has Before/After Slider">
-                    <SlidersHorizontal size={12} />
-                  </span>
-                )}
+      {projects.map((project) => {
+        const isDraft = project.publishStatus === "DRAFT";
+        return (
+          <div
+            key={project.id}
+            className={`border bg-navy/20 p-5 md:p-6 hover:border-gold/50 transition-colors rounded ${
+              isDraft ? "border-amber-500/40 bg-amber-500/5" : "border-border"
+            }`}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* Thumbnail Preview */}
+              <div className="md:col-span-3">
+                <div className="relative aspect-video w-full overflow-hidden rounded border border-border bg-charcoal">
+                  {project.image ? (
+                    <img
+                      src={resolveImageUrl(project.image)}
+                      alt={project.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-muted-foreground text-xs">
+                      No image
+                    </div>
+                  )}
+                  {project.hasVideo && (
+                    <span className="absolute top-1.5 right-1.5 bg-gold text-charcoal p-1 rounded-full shadow" title="Has Video">
+                      <Video size={12} />
+                    </span>
+                  )}
+                  {project.showBeforeAfter && (
+                    <span className="absolute bottom-1.5 right-1.5 bg-cyan-500 text-charcoal p-1 rounded-full shadow" title="Has Before/After Slider">
+                      <SlidersHorizontal size={12} />
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-[10px] text-muted-foreground truncate font-mono">
+                  {getImageLabel(project.image)}
+                </p>
               </div>
-              <p className="mt-1 text-[10px] text-muted-foreground truncate font-mono">
-                {getImageLabel(project.image)}
-              </p>
-            </div>
 
-            {/* Details */}
-            <div className="md:col-span-6 space-y-1">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="label-track text-gold font-bold">{project.number}</span>
-                <span className={`label-track !text-[9px] border border-border/80 px-2 py-0.5 rounded ${getCategoryColor(project.category)}`}>
-                  {project.category}
-                </span>
-                {project.status && (
-                  <span className="label-track !text-[9px] text-muted-foreground bg-charcoal/80 px-2 py-0.5 border border-border/40 rounded">
-                    {project.status}
+              {/* Details */}
+              <div className="md:col-span-6 space-y-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="label-track text-gold font-bold">{project.number}</span>
+                  <span className={`label-track !text-[9px] border border-border/80 px-2 py-0.5 rounded ${getCategoryColor(project.category)}`}>
+                    {project.category}
                   </span>
-                )}
-                {project.year && (
-                  <span className="label-track !text-[9px] text-ivory/60">
-                    {project.year}
-                  </span>
-                )}
+                  {isDraft ? (
+                    <span className="label-track !text-[9px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 border border-amber-400/40 rounded">
+                      ● DRAFT
+                    </span>
+                  ) : (
+                    <span className="label-track !text-[9px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 border border-emerald-400/40 rounded">
+                      ● PUBLISHED
+                    </span>
+                  )}
+                  {project.status && (
+                    <span className="label-track !text-[9px] text-muted-foreground bg-charcoal/80 px-2 py-0.5 border border-border/40 rounded">
+                      {project.status}
+                    </span>
+                  )}
+                  {project.year && (
+                    <span className="label-track !text-[9px] text-ivory/60">
+                      {project.year}
+                    </span>
+                  )}
+                </div>
+                <h3 className="title-card text-2xl text-ivory">{project.title}</h3>
+                <p className="label-track text-gold/80 !text-[9px]">{project.type}</p>
+                <p className="text-xs text-ivory/70 line-clamp-2">{project.role}</p>
+
+                <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-muted-foreground">
+                  {project.posterImage && (
+                    <span className="flex items-center gap-1 bg-navy/60 px-1.5 py-0.5 rounded border border-border/40">
+                      <ImageIcon size={10} /> Poster
+                    </span>
+                  )}
+                  {project.showBeforeAfter && (
+                    <span className="flex items-center gap-1 bg-navy/60 px-1.5 py-0.5 rounded border border-border/40 text-cyan-300">
+                      <SlidersHorizontal size={10} /> Before/After
+                    </span>
+                  )}
+                  {project.galleryImages && project.galleryImages.length > 0 && (
+                    <span className="flex items-center gap-1 bg-navy/60 px-1.5 py-0.5 rounded border border-border/40">
+                      {project.galleryImages.length} Gallery Imgs
+                    </span>
+                  )}
+                </div>
               </div>
-              <h3 className="title-card text-2xl text-ivory">{project.title}</h3>
-              <p className="label-track text-gold/80 !text-[9px]">{project.type}</p>
-              <p className="text-xs text-ivory/70 line-clamp-2">{project.role}</p>
 
-              <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-muted-foreground">
-                {project.posterImage && (
-                  <span className="flex items-center gap-1 bg-navy/60 px-1.5 py-0.5 rounded border border-border/40">
-                    <ImageIcon size={10} /> Poster
-                  </span>
+              {/* Actions */}
+              <div className="md:col-span-3 flex flex-col gap-2">
+                <button
+                  onClick={() => onEdit(project)}
+                  className="label-track border border-gold/70 bg-gold/10 px-4 py-2.5 !text-[10px] text-gold hover:bg-gold hover:!text-charcoal transition-all text-center flex items-center justify-center gap-1.5 rounded cursor-pointer min-h-[38px]"
+                >
+                  <Edit3 size={12} />
+                  Edit Project
+                </button>
+
+                {onTogglePublish && (
+                  <button
+                    onClick={() => onTogglePublish(project)}
+                    className={`label-track border px-4 py-2 !text-[9px] transition-all text-center flex items-center justify-center gap-1.5 rounded cursor-pointer min-h-[36px] ${
+                      isDraft
+                        ? "border-emerald-500/60 text-emerald-400 hover:bg-emerald-500/20"
+                        : "border-amber-500/60 text-amber-400 hover:bg-amber-500/20"
+                    }`}
+                  >
+                    {isDraft ? "✓ Publish Project" : "⏸ Move to Draft"}
+                  </button>
                 )}
-                {project.showBeforeAfter && (
-                  <span className="flex items-center gap-1 bg-navy/60 px-1.5 py-0.5 rounded border border-border/40 text-cyan-300">
-                    <SlidersHorizontal size={10} /> Before/After
-                  </span>
-                )}
-                {project.galleryImages && project.galleryImages.length > 0 && (
-                  <span className="flex items-center gap-1 bg-navy/60 px-1.5 py-0.5 rounded border border-border/40">
-                    {project.galleryImages.length} Gallery Imgs
-                  </span>
-                )}
+
+                <div className="flex gap-2">
+                  <a
+                    href={`/portfolio/${project.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="label-track flex-1 border border-border/80 bg-charcoal/60 px-3 py-2 !text-[9px] text-ivory/80 hover:text-gold hover:border-gold/60 transition-all text-center flex items-center justify-center gap-1 rounded min-h-[36px]"
+                  >
+                    Preview ↗
+                  </a>
+                  <button
+                    onClick={() => onDelete(project.id)}
+                    className="label-track border border-red-500/50 bg-red-500/5 px-3 py-2 !text-[9px] text-red-400 hover:bg-red-500/20 transition-all text-center flex items-center justify-center gap-1 rounded cursor-pointer min-h-[36px]"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="md:col-span-3 flex md:flex-col justify-end gap-2">
-              <button
-                onClick={() => onEdit(project)}
-                className="label-track border border-gold/70 bg-gold/10 px-4 py-2.5 !text-[10px] text-gold hover:bg-gold hover:!text-charcoal transition-all text-center flex items-center justify-center gap-1.5 rounded cursor-pointer"
-              >
-                <Edit3 size={12} />
-                Edit Project
-              </button>
-              <button
-                onClick={() => onDelete(project.id)}
-                className="label-track border border-red-500/50 bg-red-500/5 px-4 py-2.5 !text-[10px] text-red-400 hover:bg-red-500/20 transition-all text-center flex items-center justify-center gap-1.5 rounded cursor-pointer"
-              >
-                <Trash2 size={12} />
-                Delete
-              </button>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

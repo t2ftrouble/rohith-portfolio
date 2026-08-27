@@ -14,6 +14,12 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DigitalMarketingRouteImport } from './routes/digital-marketing'
+import { Route as ApiEnquiriesRouteImport } from './routes/api.enquiries'
+import { Route as ApiFeaturedProjectsRouteImport } from './routes/api.featured-projects'
+import { Route as ApiHomepageContentRouteImport } from './routes/api.homepage-content'
+import { Route as ApiResumeRouteImport } from './routes/api.resume'
+import { Route as ApiSeoSettingsRouteImport } from './routes/api.seo-settings'
+import { Route as ApiShowreelRouteImport } from './routes/api.showreel'
 import { Route as ApiSiteImagesRouteImport } from './routes/api.site-images'
 import { Route as ApiSocialLinksRouteImport } from './routes/api.social-links'
 import { Route as ApiUploadRouteImport } from './routes/api.upload'
@@ -48,6 +54,36 @@ const ContactRoute = ContactRouteImport.update({
 const DigitalMarketingRoute = DigitalMarketingRouteImport.update({
   id: '/digital-marketing',
   path: '/digital-marketing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEnquiriesRoute = ApiEnquiriesRouteImport.update({
+  id: '/api/enquiries',
+  path: '/api/enquiries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFeaturedProjectsRoute = ApiFeaturedProjectsRouteImport.update({
+  id: '/api/featured-projects',
+  path: '/api/featured-projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHomepageContentRoute = ApiHomepageContentRouteImport.update({
+  id: '/api/homepage-content',
+  path: '/api/homepage-content',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiResumeRoute = ApiResumeRouteImport.update({
+  id: '/api/resume',
+  path: '/api/resume',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSeoSettingsRoute = ApiSeoSettingsRouteImport.update({
+  id: '/api/seo-settings',
+  path: '/api/seo-settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiShowreelRoute = ApiShowreelRouteImport.update({
+  id: '/api/showreel',
+  path: '/api/showreel',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSiteImagesRoute = ApiSiteImagesRouteImport.update({
@@ -107,6 +143,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/enquiries': typeof ApiEnquiriesRoute
+  '/api/featured-projects': typeof ApiFeaturedProjectsRoute
+  '/api/homepage-content': typeof ApiHomepageContentRoute
+  '/api/resume': typeof ApiResumeRoute
+  '/api/seo-settings': typeof ApiSeoSettingsRoute
+  '/api/showreel': typeof ApiShowreelRoute
   '/api/site-images': typeof ApiSiteImagesRoute
   '/api/social-links': typeof ApiSocialLinksRoute
   '/api/upload': typeof ApiUploadRoute
@@ -124,6 +166,12 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/enquiries': typeof ApiEnquiriesRoute
+  '/api/featured-projects': typeof ApiFeaturedProjectsRoute
+  '/api/homepage-content': typeof ApiHomepageContentRoute
+  '/api/resume': typeof ApiResumeRoute
+  '/api/seo-settings': typeof ApiSeoSettingsRoute
+  '/api/showreel': typeof ApiShowreelRoute
   '/api/site-images': typeof ApiSiteImagesRoute
   '/api/social-links': typeof ApiSocialLinksRoute
   '/api/upload': typeof ApiUploadRoute
@@ -142,6 +190,12 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/enquiries': typeof ApiEnquiriesRoute
+  '/api/featured-projects': typeof ApiFeaturedProjectsRoute
+  '/api/homepage-content': typeof ApiHomepageContentRoute
+  '/api/resume': typeof ApiResumeRoute
+  '/api/seo-settings': typeof ApiSeoSettingsRoute
+  '/api/showreel': typeof ApiShowreelRoute
   '/api/site-images': typeof ApiSiteImagesRoute
   '/api/social-links': typeof ApiSocialLinksRoute
   '/api/upload': typeof ApiUploadRoute
@@ -161,6 +215,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/enquiries'
+    | '/api/featured-projects'
+    | '/api/homepage-content'
+    | '/api/resume'
+    | '/api/seo-settings'
+    | '/api/showreel'
     | '/api/site-images'
     | '/api/social-links'
     | '/api/upload'
@@ -178,6 +238,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/enquiries'
+    | '/api/featured-projects'
+    | '/api/homepage-content'
+    | '/api/resume'
+    | '/api/seo-settings'
+    | '/api/showreel'
     | '/api/site-images'
     | '/api/social-links'
     | '/api/upload'
@@ -195,6 +261,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/enquiries'
+    | '/api/featured-projects'
+    | '/api/homepage-content'
+    | '/api/resume'
+    | '/api/seo-settings'
+    | '/api/showreel'
     | '/api/site-images'
     | '/api/social-links'
     | '/api/upload'
@@ -213,6 +285,12 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ContactRoute: typeof ContactRoute
   DigitalMarketingRoute: typeof DigitalMarketingRoute
+  ApiEnquiriesRoute: typeof ApiEnquiriesRoute
+  ApiFeaturedProjectsRoute: typeof ApiFeaturedProjectsRoute
+  ApiHomepageContentRoute: typeof ApiHomepageContentRoute
+  ApiResumeRoute: typeof ApiResumeRoute
+  ApiSeoSettingsRoute: typeof ApiSeoSettingsRoute
+  ApiShowreelRoute: typeof ApiShowreelRoute
   ApiSiteImagesRoute: typeof ApiSiteImagesRoute
   ApiSocialLinksRoute: typeof ApiSocialLinksRoute
   ApiUploadRoute: typeof ApiUploadRoute
@@ -260,6 +338,48 @@ declare module '@tanstack/react-router' {
       path: '/digital-marketing'
       fullPath: '/digital-marketing'
       preLoaderRoute: typeof DigitalMarketingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/enquiries': {
+      id: '/api/enquiries'
+      path: '/api/enquiries'
+      fullPath: '/api/enquiries'
+      preLoaderRoute: typeof ApiEnquiriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/featured-projects': {
+      id: '/api/featured-projects'
+      path: '/api/featured-projects'
+      fullPath: '/api/featured-projects'
+      preLoaderRoute: typeof ApiFeaturedProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/homepage-content': {
+      id: '/api/homepage-content'
+      path: '/api/homepage-content'
+      fullPath: '/api/homepage-content'
+      preLoaderRoute: typeof ApiHomepageContentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/resume': {
+      id: '/api/resume'
+      path: '/api/resume'
+      fullPath: '/api/resume'
+      preLoaderRoute: typeof ApiResumeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/seo-settings': {
+      id: '/api/seo-settings'
+      path: '/api/seo-settings'
+      fullPath: '/api/seo-settings'
+      preLoaderRoute: typeof ApiSeoSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/showreel': {
+      id: '/api/showreel'
+      path: '/api/showreel'
+      fullPath: '/api/showreel'
+      preLoaderRoute: typeof ApiShowreelRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/site-images': {
@@ -341,6 +461,12 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ContactRoute: ContactRoute,
   DigitalMarketingRoute: DigitalMarketingRoute,
+  ApiEnquiriesRoute: ApiEnquiriesRoute,
+  ApiFeaturedProjectsRoute: ApiFeaturedProjectsRoute,
+  ApiHomepageContentRoute: ApiHomepageContentRoute,
+  ApiResumeRoute: ApiResumeRoute,
+  ApiSeoSettingsRoute: ApiSeoSettingsRoute,
+  ApiShowreelRoute: ApiShowreelRoute,
   ApiSiteImagesRoute: ApiSiteImagesRoute,
   ApiSocialLinksRoute: ApiSocialLinksRoute,
   ApiUploadRoute: ApiUploadRoute,

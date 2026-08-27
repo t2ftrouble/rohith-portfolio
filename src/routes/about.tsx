@@ -3,37 +3,44 @@ import { motion } from "motion/react";
 import { useState, useEffect } from "react";
 
 import defaultAboutImage from "@/assets/about-editroom.webp";
-import resumePdf from "@/assets/Rohith V Resume.pdf";
 import { Reveal } from "@/components/Reveal";
 import { FocusReveal } from "@/components/FocusReveal";
 import { Stage } from "@/components/three/Stage";
 import { getSiteImages, defaultSiteImages, type SiteImagesData } from "@/lib/site-images";
+import { getResumeData, defaultResumeData, type ResumeData } from "@/lib/resume";
+import { getSeoSettings, defaultSeoSettings, type SeoSettingsData } from "@/lib/seo-settings";
 
 export const Route = createFileRoute("/about")({
   loader: async () => {
     try {
-      const siteImages = await getSiteImages();
-      return { siteImages };
+      const [siteImages, resumeData, seo] = await Promise.all([
+        getSiteImages(),
+        getResumeData(),
+        getSeoSettings(),
+      ]);
+      return { siteImages, resumeData, seoSettings: seo };
     } catch {
-      return { siteImages: defaultSiteImages };
+      return {
+        siteImages: defaultSiteImages,
+        resumeData: defaultResumeData,
+        seoSettings: defaultSeoSettings,
+      };
     }
   },
-  head: () => ({
-    meta: [
-      { title: "The Filmmaker — About Rohith V" },
-      {
-        name: "description",
-        content:
-          "Rohith V — Visual Communication student and emerging Filmmaker, Writer, Editor and VFX/CG Artist based in Chennai.",
-      },
-      { property: "og:title", content: "The Filmmaker — About Rohith V" },
-      {
-        property: "og:description",
-        content:
-          "Profile, journey, approach and education of Rohith V, filmmaker based in Chennai, Tamil Nadu.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seoSettings || defaultSeoSettings;
+    const title = seo.aboutTitle || "The Filmmaker — About Rohith V";
+    const description = seo.aboutDescription || "Rohith V — Visual Communication student and emerging Filmmaker, Writer, Editor and VFX/CG Artist based in Chennai.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: seo.globalOgImage },
+      ],
+    };
+  },
   component: About,
 });
 
@@ -42,9 +49,15 @@ function About() {
   const [siteImages, setSiteImages] = useState<SiteImagesData>(
     loaderData?.siteImages || defaultSiteImages
   );
+  const [resumeData, setResumeData] = useState<ResumeData>(
+    loaderData?.resumeData || defaultResumeData
+  );
 
   useEffect(() => {
-    getSiteImages().then(setSiteImages).catch(() => {});
+    Promise.all([getSiteImages(), getResumeData()]).then(([imgs, res]) => {
+      if (imgs) setSiteImages(imgs);
+      if (res) setResumeData(res);
+    }).catch(() => {});
 
     const handleUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<SiteImagesData>;
@@ -263,22 +276,26 @@ function About() {
           </div>
         </div>
 
-        {/* RESUME DOWNLOAD */}
-        <div className="mt-24 border-t border-border pt-16 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
-            <p className="label-track text-gold">DOCUMENTATION</p>
-            <h3 className="title-card mt-2 text-2xl text-ivory">Curriculum Vitae</h3>
+        {/* RESUME DOWNLOAD — Gracefully hidden if disabled or no URL */}
+        {resumeData.enabled && resumeData.url && (
+          <div className="mt-24 border-t border-border pt-16 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <p className="label-track text-gold">DOCUMENTATION</p>
+              <h3 className="title-card mt-2 text-2xl text-ivory">Curriculum Vitae</h3>
+            </div>
+            <a
+              href={resumeData.url}
+              download={resumeData.filename || "Rohith_V_Resume.pdf"}
+              target="_blank"
+              rel="noreferrer"
+              data-cursor="download resume"
+              data-magnetic="true"
+              className="label-track border border-gold bg-gold/10 px-8 py-5 !text-[10px] !text-gold transition-all hover:bg-gold hover:!text-charcoal shadow-md font-bold"
+            >
+              DOWNLOAD RESUME (PDF) ↓
+            </a>
           </div>
-          <a
-            href={resumePdf}
-            download="Rohith_V_Resume.pdf"
-            data-cursor="download resume"
-            data-magnetic="true"
-            className="label-track border border-gold bg-gold/10 px-8 py-5 !text-[10px] !text-gold transition-all hover:bg-gold hover:!text-charcoal shadow-md font-bold"
-          >
-            DOWNLOAD RESUME (PDF) ↓
-          </a>
-        </div>
+        )}
       </div>
     </section>
   );

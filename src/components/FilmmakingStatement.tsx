@@ -1,7 +1,13 @@
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
-export function FilmmakingStatement() {
+export function FilmmakingStatement({
+  title = "A Film Is More Than a Frame.",
+  text = "I don't just create visuals.\nI create moments people remember.",
+}: {
+  title?: string;
+  text?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -35,7 +41,7 @@ export function FilmmakingStatement() {
           transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="title-card text-[clamp(2rem,8vw,5rem)] leading-[1.1] text-ivory"
         >
-          A Film Is More Than a Frame.
+          {title}
         </motion.h2>
 
         <motion.p
@@ -43,11 +49,9 @@ export function FilmmakingStatement() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 1, delay: 0.4 }}
-          className="mt-8 text-lg text-ivory/70 max-w-2xl mx-auto leading-relaxed"
+          className="mt-8 text-lg text-ivory/70 max-w-2xl mx-auto leading-relaxed whitespace-pre-line"
         >
-          I don't just create visuals.
-          <br />
-          I create moments people remember.
+          {text}
         </motion.p>
       </motion.div>
     </section>

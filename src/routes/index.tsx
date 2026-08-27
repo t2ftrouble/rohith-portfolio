@@ -33,6 +33,21 @@ import { FocusReveal } from "@/components/FocusReveal";
 import { Stage } from "@/components/three/Stage";
 import { FilmmakingStatement } from "@/components/FilmmakingStatement";
 import { getSiteImages, type SiteImagesData } from "@/lib/site-images";
+import {
+  getHomepageContent,
+  defaultHomepageContent,
+  type HomepageContentData,
+} from "@/lib/homepage-content";
+import {
+  getFeaturedProjects,
+  defaultFeaturedProjects,
+  type FeaturedProjectsData,
+} from "@/lib/featured-projects";
+import {
+  getSeoSettings,
+  defaultSeoSettings,
+  type SeoSettingsData,
+} from "@/lib/seo-settings";
 
 import premiereProLogo from "@/assets/logo/premier pro.webp";
 import afterEffectsLogo from "@/assets/logo/after effect.webp";
@@ -46,54 +61,44 @@ import pftrackLogo from "@/assets/logo/pf track.webp";
 export const Route = createFileRoute("/")({
   loader: async () => {
     try {
-      const dynamicProjects = await getProjects();
-      return { projects: dynamicProjects };
+      const [dynamicProjects, hpContent, featuredData, seo] = await Promise.all([
+        getProjects(),
+        getHomepageContent(),
+        getFeaturedProjects(),
+        getSeoSettings(),
+      ]);
+      return {
+        projects: dynamicProjects,
+        homepageContent: hpContent,
+        featuredProjects: featuredData,
+        seoSettings: seo,
+      };
     } catch {
-      return { projects: defaultProjects };
+      return {
+        projects: defaultProjects,
+        homepageContent: defaultHomepageContent,
+        featuredProjects: defaultFeaturedProjects,
+        seoSettings: defaultSeoSettings,
+      };
     }
   },
-  head: () => ({
-    meta: [
-      { title: "Rohith V | Filmmaker | Writer | Editor | VFX/CG Artist" },
-      {
-        name: "description",
-        content:
-          "Rohith V is a Visual Communication student and Filmmaker, Writer, Editor and VFX/CG Artist based in Chennai. Selected work includes One Last Day, Toothpaste, Kadalar and Radhal.",
-      },
-      {
-        property: "og:title",
-        content: "Rohith V | Filmmaker | Writer | Editor | VFX/CG Artist",
-      },
-      {
-        property: "og:description",
-        content:
-          "A cinematic world of frames, story and cuts — selected work by Rohith V, filmmaker based in Chennai.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seoSettings || defaultSeoSettings;
+    const title = seo.homeTitle || seo.globalTitle;
+    const description = seo.homeDescription || seo.globalDescription;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { name: "keywords", content: seo.globalKeywords },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: seo.globalOgImage },
+      ],
+    };
+  },
   component: Home,
 });
-
-const philosophy = [
-  {
-    step: "01",
-    word: "SEE",
-    subtitle: "Visual Composition & Light",
-    text: "Every frame begins with how we see — deliberate composition, lighting depth, spatial blocking and intentional camera movement.",
-  },
-  {
-    step: "02",
-    word: "FEEL",
-    subtitle: "Atmosphere & Emotional Weight",
-    text: "A film must make you feel before it makes you think — performance, tone and sonic atmosphere give the visual its soul.",
-  },
-  {
-    step: "03",
-    word: "TELL",
-    subtitle: "Pacing & Narrative Truth",
-    text: "Cinema is narrative honesty — pacing, restraint and moments that stay with the audience long after the screen goes black.",
-  },
-];
 
 const skills = [
   {
@@ -124,27 +129,27 @@ const skills = [
 
 const digitalMarketingSkills = [
   {
-    title: "Brand Strategy & Positioning",
-    description: "Defining your brand's unique voice, target audience, and market position.",
-    icon: Target as LucideIcon,
+    title: "Direct-Response Video Ads",
+    description: "High-hook video creatives tailored for Meta (FB/IG) and Google Ads campaigns.",
+    icon: Megaphone as LucideIcon,
     accent: "01",
   },
   {
-    title: "Content Marketing & Social Media",
-    description: "Creating engaging content that builds community, drives reach, and converts.",
-    icon: Megaphone as LucideIcon,
+    title: "Social Reels & Short Form",
+    description: "Vertical video designed for rapid retention, episodic branding, and shareability.",
+    icon: TrendingUp as LucideIcon,
     accent: "02",
   },
   {
-    title: "Performance Marketing (Meta & Google Ads)",
-    description: "Data-driven ad campaigns optimized for ROI, lead generation, and sales.",
-    icon: TrendingUp as LucideIcon,
+    title: "Brand Film Documentaries",
+    description: "Narrative founder stories and cinematic showcases that establish deep customer trust.",
+    icon: Users as LucideIcon,
     accent: "03",
   },
   {
-    title: "Personal Branding & Executive Presence",
-    description: "Transforming founders and creators into recognized industry authorities.",
-    icon: Users as LucideIcon,
+    title: "Hook Strategy & Scripting",
+    description: "Psychological framing, scroll-stopping visual openings, and CTA placement.",
+    icon: Target as LucideIcon,
     accent: "04",
   },
   {
@@ -212,7 +217,7 @@ const software = [
   },
 ];
 
-function Hero() {
+function Hero({ content }: { content: HomepageContentData }) {
   const ref = useRef<HTMLDivElement>(null);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const [heroBg, setHeroBg] = useState<string>(heroImage);
@@ -279,7 +284,7 @@ function Hero() {
         
         <FocusReveal delay={0.35}>
           <h1 className="title-card mt-3 text-[clamp(2.5rem,10vw,8.8rem)] leading-[0.9] text-ivory drop-shadow-sm text-balance">
-            Rohith V
+            {content.heroTitle || "Rohith V"}
           </h1>
         </FocusReveal>
 
@@ -291,33 +296,33 @@ function Hero() {
         >
           <div className="text-center md:text-left">
             <p className="label-track !text-[clamp(0.75rem,2vw,0.875rem)] !tracking-[0.5em] text-ivory">
-              Filmmaker
+              {content.heroSubtitle || "Filmmaker"}
             </p>
             <p className="label-track mt-3 !text-[clamp(0.6rem,1.8vw,0.625rem)] text-gold">
-              Writer • Editor • VFX / CG Artist
+              {content.heroRole || "Writer • Editor • VFX / CG Artist"}
             </p>
           </div>
           
-          {/* Mobile responsive button pair (stays neatly inside viewport) */}
+          {/* Mobile responsive button pair */}
           <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-row w-full sm:w-auto mt-2 sm:mt-0">
             <motion.div whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
               <Link
-                to="/portfolio"
+                to={content.heroCtaLink || "/portfolio"}
                 data-cursor="view work →"
                 data-magnetic="true"
                 className="label-track w-full bg-gold px-5 py-3.5 sm:px-6 sm:py-4 !text-[9px] sm:!text-[10px] !text-charcoal transition-all hover:bg-gold/90 min-h-[44px] text-center inline-flex items-center justify-center shadow-md font-bold"
               >
-                VIEW WORK →
+                {content.heroCtaText || "VIEW WORK →"}
               </Link>
             </motion.div>
             <motion.div whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
               <Link
-                to="/contact"
+                to={content.heroSecondaryCtaLink || "/contact"}
                 data-cursor="contact →"
                 data-magnetic="true"
                 className="label-track w-full border border-gold/60 px-4 py-3.5 sm:px-5 sm:py-4 !text-[9px] sm:!text-[10px] !text-gold transition-all hover:border-gold hover:bg-gold/10 min-h-[44px] text-center inline-flex items-center justify-center"
               >
-                START PROJECT →
+                {content.heroSecondaryCtaText || "START A PROJECT →"}
               </Link>
             </motion.div>
           </div>
@@ -330,22 +335,50 @@ function Hero() {
 function Home() {
   const loaderData = Route.useLoaderData();
   const [activeSkillTab, setActiveSkillTab] = useState(0);
+  const [content, setContent] = useState<HomepageContentData>(
+    loaderData?.homepageContent || defaultHomepageContent
+  );
+  const [featuredData, setFeaturedData] = useState<FeaturedProjectsData>(
+    loaderData?.featuredProjects || defaultFeaturedProjects
+  );
   const [homeProjects, setHomeProjects] = useState<Project[]>(
     loaderData?.projects && loaderData.projects.length > 0 ? loaderData.projects : defaultProjects
   );
 
   useEffect(() => {
-    getProjects()
-      .then((data) => {
-        if (data && data.length > 0) setHomeProjects(data);
+    Promise.all([getProjects(), getHomepageContent(), getFeaturedProjects()])
+      .then(([projectsData, hpData, featData]) => {
+        if (projectsData && projectsData.length > 0) setHomeProjects(projectsData);
+        if (hpData) setContent(hpData);
+        if (featData) setFeaturedData(featData);
       })
       .catch(() => {});
   }, []);
 
+  // Filter projects to only published and order them according to featuredSlugs
+  const publishedProjects = homeProjects.filter((p) => p.publishStatus !== "DRAFT");
+  
+  const orderedProjects: Project[] = [];
+  // First, add projects in featuredSlugs order
+  featuredData.featuredSlugs.forEach((slug) => {
+    const found = publishedProjects.find((p) => p.slug === slug);
+    if (found && !orderedProjects.some((p) => p.slug === found.slug)) {
+      orderedProjects.push(found);
+    }
+  });
+  // Then append any remaining published projects not explicitly listed
+  publishedProjects.forEach((p) => {
+    if (!orderedProjects.some((op) => op.slug === p.slug)) {
+      orderedProjects.push(p);
+    }
+  });
+
+  const displayProjects = orderedProjects.length > 0 ? orderedProjects : publishedProjects;
+
   return (
     <>
       <OpeningTitles />
-      <Hero />
+      <Hero content={content} />
 
       {/* THE FILMMAKER */}
       <section className="relative mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-36">
@@ -353,40 +386,37 @@ function Home() {
           <FocusReveal className="md:col-span-4">
             <p className="label-track text-gold">01 — Profile</p>
             <h2 className="title-card mt-5 text-4xl text-ivory md:text-6xl">
-              The
-              <br />
-              Filmmaker
+              {content.aboutProfileTitle || "The Filmmaker"}
             </h2>
           </FocusReveal>
           <div className="md:col-span-7 md:col-start-6 col-span-1">
             <Reveal delay={0.1}>
               <p className="text-lg leading-relaxed text-ivory/85 md:text-2xl">
-                Visual Communication student and emerging Assistant Director, Writer, Editor and
-                VFX/CG Artist with hands-on experience in filmmaking, screenplay development,
-                editing and post-production.
+                {content.aboutProfileText}
               </p>
             </Reveal>
             <Reveal delay={0.2}>
               <p className="mt-8 text-base leading-relaxed text-muted-foreground md:text-lg">
-                My experience includes assisting in script and screenplay development for RADHAL,
-                working as a CG Artist for KADALAR, and directing and editing independent short
-                films.
+                {content.aboutSubText}
               </p>
             </Reveal>
             <Reveal delay={0.3}>
               <Link
-                to="/about"
+                to={content.aboutCtaLink || "/about"}
                 data-cursor="enter →"
                 className="label-track mt-10 inline-block !text-gold"
               >
-                More about the work →
+                {content.aboutCtaText || "More about the work →"}
               </Link>
             </Reveal>
           </div>
         </div>
       </section>
 
-      <FilmmakingStatement />
+      <FilmmakingStatement
+        title={content.statementTitle}
+        text={content.statementText}
+      />
 
       {/* SELECTED WORK */}
       <section className="relative border-t border-border bg-charcoal">
@@ -400,14 +430,14 @@ function Home() {
             <h2 className="title-card mt-5 text-5xl text-ivory md:text-8xl">Selected Work</h2>
           </FocusReveal>
           <div className="mt-16">
-            {homeProjects.map((p, i) => (
+            {displayProjects.map((p, i) => (
               <ProjectChapter key={p.slug} project={p} index={i} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* PHILOSOPHY — SEE → FEEL → TELL (Cinematic Right-to-Left Transition) */}
+      {/* PHILOSOPHY — SEE → FEEL → TELL */}
       <section className="border-t border-border bg-charcoal relative overflow-hidden">
         <div className="mx-auto max-w-[1600px] px-6 py-24 md:px-12 md:py-36">
           <FocusReveal>
@@ -418,38 +448,50 @@ function Home() {
           </FocusReveal>
 
           <div className="mt-16 md:mt-24 space-y-16 md:space-y-24">
-            {philosophy.map((p, i) => (
+            {(content.philosophySteps || defaultHomepageContent.philosophySteps).map((p, i) => (
               <motion.div
                 key={p.word}
-                initial={{ opacity: 0, x: 70, filter: "blur(8px)" }}
+                initial={{ opacity: 0, x: 75, filter: "blur(8px)" }}
                 whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.85, delay: i * 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="group border-b border-border/70 pb-12 md:pb-20 relative"
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.85, delay: i * 0.16, ease: [0.16, 1, 0.3, 1] }}
+                className="group border-b border-border/70 pb-12 md:pb-20 relative overflow-hidden"
               >
-                {/* Subtle Gold Accent Underline */}
-                <div className="gold-rule mb-8 opacity-40 group-hover:opacity-100 transition-opacity duration-500" />
+                {/* Minimal Gold Rule that expands on hover */}
+                <div className="gold-rule mb-8 opacity-35 group-hover:opacity-100 group-hover:scale-x-105 origin-left transition-all duration-500" />
 
                 <div className="grid gap-6 md:grid-cols-12 md:items-baseline">
-                  {/* Step & Large Premium Word */}
-                  <div className="md:col-span-5 flex items-baseline gap-4 sm:gap-6">
+                  {/* Step & Large Bold Title Word */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 50 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.75, delay: i * 0.16 + 0.1, ease: [0.16, 1, 0.3, 1] }}
+                    className="md:col-span-5 flex items-baseline gap-4 sm:gap-6"
+                  >
                     <span className="label-track !text-xs sm:!text-sm text-gold/80 font-mono">
                       {p.step}
                     </span>
-                    <h3 className="title-card text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-ivory group-hover:text-gold transition-colors duration-500 tracking-tight">
+                    <h3 className="title-card text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-ivory group-hover:text-gold transition-colors duration-500 tracking-tight select-none">
                       {p.word}
                     </h3>
-                  </div>
+                  </motion.div>
 
-                  {/* Subtitle & Concise Description */}
-                  <div className="md:col-span-7 md:col-start-6">
+                  {/* Subtitle & Concise Manifesto Description */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 40 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.75, delay: i * 0.16 + 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="md:col-span-7 md:col-start-6"
+                  >
                     <p className="label-track text-gold/90 mb-3 !tracking-[0.3em]">
                       {p.subtitle}
                     </p>
-                    <p className="text-base sm:text-lg md:text-2xl text-ivory/80 leading-relaxed max-w-2xl font-light">
+                    <p className="text-base sm:text-lg md:text-2xl text-ivory/85 leading-relaxed max-w-2xl font-light">
                       {p.text}
                     </p>
-                  </div>
+                  </motion.div>
                 </div>
               </motion.div>
             ))}
