@@ -355,18 +355,26 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
   const handleApplyAIFunctions = (generated: Record<string, any>) => {
     setFormData((prev) => ({
       ...prev,
+      title: (generated["title"] as string) || prev.title,
       logline: (generated["logline"] as string) || prev.logline,
-      synopsis: (generated["synopsis"] as string) || prev.synopsis,
+      synopsis: (generated["fullSynopsis"] as string) || (generated["synopsis"] as string) || (generated["shortSynopsis"] as string) || prev.synopsis,
+      description: (generated["shortSynopsis"] as string) || (generated["synopsis"] as string) || prev.description,
       directorNote: (generated["directorNote"] as string) || prev.directorNote,
+      whatIFelt: (generated["directorNote"] as string) || prev.whatIFelt,
       seoTitle: (generated["seoTitle"] as string) || prev.seoTitle,
-      metaDescription: (generated["metaDescription"] as string) || prev.metaDescription,
-      keywords: (generated["keywords"] as string) || prev.keywords,
-      ogTitle: (generated["ogTitle"] as string) || prev.ogTitle,
-      ogDescription: (generated["ogDescription"] as string) || prev.ogDescription,
+      metaDescription: (generated["seoDescription"] as string) || (generated["metaDescription"] as string) || prev.metaDescription,
+      keywords: (generated["seoKeywords"] as string) || (generated["keywords"] as string) || prev.keywords,
+      ogTitle: (generated["seoTitle"] as string) || (generated["ogTitle"] as string) || prev.ogTitle,
+      ogDescription: (generated["ogDescription"] as string) || (generated["seoDescription"] as string) || prev.ogDescription,
       imageAlt: (generated["imageAlt"] as string) || prev.imageAlt,
       tags: Array.isArray(generated["tags"]) ? (generated["tags"] as string[]).join(", ") : prev.tags,
     }));
-    setUploadStatus("✓ AI proposals applied! Review and save below.");
+
+    if (generated["myContribution"] && typeof generated["myContribution"] === "string" && !processText.trim()) {
+      setProcessText(generated["myContribution"]);
+    }
+
+    setUploadStatus("✓ All 13 AI fields applied! Review and save below.");
     setTimeout(() => setUploadStatus(null), 4000);
   };
 
