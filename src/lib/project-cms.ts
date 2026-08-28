@@ -1,4 +1,16 @@
-import type { Project } from "@/data/projects";
+import type {
+  Project,
+  GalleryItem,
+  BeforeAfterPair,
+  VFXBreakdownItem,
+  TeamMember,
+  AwardItem,
+  ProjectLinkItem,
+  SectionVisibility,
+  ProjectVideoConfig,
+  ProjectSEOSettings,
+} from "@/data/projects";
+import { defaultSectionVisibility } from "@/data/projects";
 import { resolveImageUrl } from "./asset-resolver";
 
 export type ProjectFormData = {
@@ -33,6 +45,28 @@ export type ProjectFormData = {
   emotionalDescriptor?: string | null | undefined; // Short emotional tagline
   whatIFelt?: string | null | undefined; // Personal creative note
   publishStatus?: "PUBLISHED" | "DRAFT" | undefined; // Publishing state
+
+  // CMS v2 Features
+  heroImage?: string | null | undefined;
+  thumbnailImage?: string | null | undefined;
+  featuredThumbnail?: string | null | undefined;
+  ogImage?: string | null | undefined;
+  imageAlt?: string | null | undefined;
+  logline?: string | null | undefined;
+  synopsis?: string | null | undefined;
+  directorNote?: string | null | undefined;
+  duration?: string | null | undefined;
+  formatSpecs?: string | null | undefined;
+  tags?: string[] | undefined;
+  galleryItems?: GalleryItem[] | undefined;
+  beforeAfterPairs?: BeforeAfterPair[] | undefined;
+  vfxBreakdowns?: VFXBreakdownItem[] | undefined;
+  teamCredits?: TeamMember[] | undefined;
+  awards?: AwardItem[] | undefined;
+  projectLinks?: ProjectLinkItem[] | undefined;
+  sectionVisibility?: SectionVisibility | undefined;
+  videoConfig?: ProjectVideoConfig | undefined;
+  seoSettings?: ProjectSEOSettings | undefined;
 };
 
 export type ProjectCMSData = {
@@ -98,6 +132,28 @@ export async function getProjects(): Promise<ProjectCMSData[]> {
       emotionalDescriptor: p.emotional_descriptor || "",
       whatIFelt: p.what_i_felt || "",
       publishStatus: (p.publish_status === "DRAFT" || p.status === "DRAFT") ? "DRAFT" : "PUBLISHED",
+
+      // CMS v2 fields
+      heroImage: p.hero_image || "",
+      thumbnailImage: p.thumbnail_image || "",
+      featuredThumbnail: p.featured_thumbnail || "",
+      ogImage: p.og_image || "",
+      imageAlt: p.image_alt || "",
+      logline: p.logline || "",
+      synopsis: p.synopsis || "",
+      directorNote: p.director_note || "",
+      duration: p.duration || "",
+      formatSpecs: p.format_specs || "",
+      tags: Array.isArray(p.tags) ? p.tags : [],
+      galleryItems: Array.isArray(p.gallery_items) ? p.gallery_items : [],
+      beforeAfterPairs: Array.isArray(p.before_after_pairs) ? p.before_after_pairs : [],
+      vfxBreakdowns: Array.isArray(p.vfx_breakdowns) ? p.vfx_breakdowns : [],
+      teamCredits: Array.isArray(p.team_credits) ? p.team_credits : [],
+      awards: Array.isArray(p.awards) ? p.awards : [],
+      projectLinks: Array.isArray(p.project_links) ? p.project_links : [],
+      sectionVisibility: p.section_visibility || defaultSectionVisibility,
+      videoConfig: p.video_config || {},
+      seoSettings: p.seo_settings || {},
     }));
   } catch (error) {
     console.error("Error loading projects from Supabase:", error);
@@ -194,6 +250,27 @@ export function cmsToProject(cms: ProjectCMSData): Project {
     emotionalDescriptor: cms.emotionalDescriptor ? cms.emotionalDescriptor : undefined,
     whatIFelt: cms.whatIFelt ? cms.whatIFelt : undefined,
     publishStatus: cms.publishStatus || "PUBLISHED",
+
+    heroImage: cms.heroImage ? resolveImageUrl(cms.heroImage) : resolveImageUrl(cms.image),
+    thumbnailImage: cms.thumbnailImage ? resolveImageUrl(cms.thumbnailImage) : resolveImageUrl(cms.image),
+    featuredThumbnail: cms.featuredThumbnail ? resolveImageUrl(cms.featuredThumbnail) : resolveImageUrl(cms.image),
+    ogImage: cms.ogImage ? resolveImageUrl(cms.ogImage) : undefined,
+    imageAlt: cms.imageAlt || `${cms.title} — ${cms.type}`,
+    logline: cms.logline || undefined,
+    synopsis: cms.synopsis || undefined,
+    directorNote: cms.directorNote || undefined,
+    duration: cms.duration || undefined,
+    formatSpecs: cms.formatSpecs || undefined,
+    tags: cms.tags || [],
+    galleryItems: cms.galleryItems,
+    beforeAfterPairs: cms.beforeAfterPairs,
+    vfxBreakdowns: cms.vfxBreakdowns,
+    teamCredits: cms.teamCredits,
+    awards: cms.awards,
+    projectLinks: cms.projectLinks,
+    sectionVisibility: cms.sectionVisibility,
+    videoConfig: cms.videoConfig,
+    seoSettings: cms.seoSettings,
   };
 }
 

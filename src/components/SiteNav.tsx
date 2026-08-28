@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Menu, X, Phone, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { SocialLinks } from "@/components/SocialLinks";
+import { SoundToggle } from "@/components/SoundToggle";
+import { sound } from "@/lib/sound";
 
 const links = [
   { to: "/", label: "Home" },
@@ -47,36 +49,52 @@ export function SiteNav() {
       }`}
     >
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 md:px-12">
-        <Link to="/" data-cursor="text" className="group flex items-baseline gap-3 relative z-[75]">
+        <Link
+          to="/"
+          onClick={() => sound.playNavClick()}
+          data-cursor="text"
+          className="group flex items-baseline gap-3 relative z-[75]"
+        >
           <span className="title-card text-lg text-ivory">ROHITH V</span>
           <span className="label-track hidden !text-[9px] text-gold sm:inline">Filmmaker</span>
         </Link>
 
-        <nav className="hidden items-center gap-10 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              data-cursor="text"
-              data-magnetic="true"
-              className="label-track transition-colors hover:text-gold"
-              activeProps={{ className: "!text-gold" }}
-              activeOptions={{ exact: l.to === "/" }}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Desktop Links & Sound Toggle */}
+        <div className="hidden items-center gap-8 md:flex">
+          <nav className="flex items-center gap-10">
+            {links.map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                onClick={() => sound.playNavClick()}
+                data-cursor="text"
+                data-magnetic="true"
+                className="label-track transition-colors hover:text-gold"
+                activeProps={{ className: "!text-gold" }}
+                activeOptions={{ exact: l.to === "/" }}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+          <SoundToggle />
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-          className="relative z-[75] text-ivory md:hidden focus:outline-none focus:ring-1 focus:ring-gold min-h-[48px] min-w-[48px] flex items-center justify-center -mr-2 touch-manipulation cursor-pointer select-none"
-        >
-          {open ? <X size={24} className="text-gold" /> : <Menu size={24} />}
-        </button>
+        <div className="flex items-center gap-3 md:hidden">
+          <SoundToggle />
+          <button
+            type="button"
+            onClick={() => {
+              sound.playSoftClick();
+              setOpen((v) => !v);
+            }}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            className="relative z-[75] text-ivory focus:outline-none focus:ring-1 focus:ring-gold min-h-[48px] min-w-[48px] flex items-center justify-center -mr-2 touch-manipulation cursor-pointer select-none"
+          >
+            {open ? <X size={24} className="text-gold" /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* MOBILE FULLSCREEN OVERLAY */}
@@ -99,7 +117,10 @@ export function SiteNav() {
                 >
                   <Link
                     to={l.to}
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      sound.playNavClick();
+                      setOpen(false);
+                    }}
                     className="title-card text-3xl text-ivory hover:text-gold active:text-gold transition-colors block py-1.5 touch-manipulation"
                     activeProps={{ className: "!text-gold" }}
                     activeOptions={{ exact: l.to === "/" }}

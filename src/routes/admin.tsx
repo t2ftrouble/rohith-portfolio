@@ -14,6 +14,7 @@ import {
   Search,
   Menu,
   X,
+  MessageSquare,
 } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { ProjectForm } from "@/components/admin/ProjectForm";
@@ -27,6 +28,7 @@ import { ShowreelForm } from "@/components/admin/ShowreelForm";
 import { EnquiriesInbox } from "@/components/admin/EnquiriesInbox";
 import { ResumeManager } from "@/components/admin/ResumeManager";
 import { SeoManagerForm } from "@/components/admin/SeoManagerForm";
+import { CommentModerationForm } from "@/components/admin/CommentModerationForm";
 import { getEnquiries } from "@/lib/enquiries";
 import type { ProjectCMSData, ProjectFormData } from "@/lib/project-cms";
 import {
@@ -49,6 +51,7 @@ export const Route = createFileRoute("/admin")({
 export type AdminTab =
   | "dashboard"
   | "projects"
+  | "comments"
   | "media"
   | "social"
   | "homepage"
@@ -173,13 +176,10 @@ function Admin() {
     setSaveSuccess(null);
 
     try {
-      console.log("Saving project:", projectData);
       if (editingProject) {
-        console.log("Updating project ID:", editingProject.id);
         await updateProject(editingProject.id, projectData);
         setSaveSuccess(`✓ Project "${projectData.title}" updated successfully`);
       } else {
-        console.log("Creating new project");
         await addProject(projectData);
         setSaveSuccess(`✓ Project "${projectData.title}" created successfully`);
       }
@@ -245,6 +245,7 @@ function Admin() {
   const navItems: AdminNavItem[] = [
     { id: "dashboard", label: "DASHBOARD", icon: LayoutDashboard },
     { id: "projects", label: `PROJECTS (${projects.length})`, icon: Film },
+    { id: "comments", label: "COMMENTS", icon: MessageSquare },
     { id: "media", label: "WEBSITE MEDIA", icon: ImageIcon },
     { id: "social", label: "SOCIAL LINKS", icon: Share2 },
     { id: "homepage", label: "HOMEPAGE", icon: FileText },
@@ -260,7 +261,6 @@ function Admin() {
     { id: "seo", label: "SEO", icon: Search },
   ];
 
-  // Loading state while checking auth
   if (isCheckingAuth) {
     return (
       <section className="min-h-screen bg-charcoal flex items-center justify-center">
@@ -272,7 +272,6 @@ function Admin() {
     );
   }
 
-  // Login screen
   if (!isAuthenticated) {
     return (
       <section className="min-h-screen bg-charcoal flex items-center justify-center px-6">
@@ -283,7 +282,7 @@ function Admin() {
                 <p className="label-track text-gold">System Access</p>
                 <h1 className="title-card mt-3 text-3xl text-ivory">Admin CMS</h1>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Sign in to manage projects, copy, showreel, resume, enquiries & SEO
+                  Sign in to manage projects, comments, showreel, resume, enquiries & SEO
                 </p>
               </div>
 
@@ -344,7 +343,6 @@ function Admin() {
     );
   }
 
-  // Authenticated Admin Dashboard
   return (
     <section className="min-h-screen bg-charcoal">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-12 md:px-12 md:py-20">
@@ -394,10 +392,10 @@ function Admin() {
             </div>
           </div>
 
-          {/* Navigation Bar / Drawer for Mobile & Desktop */}
+          {/* Navigation Tabs */}
           {!isAdding && !editingProject && (
             <div className="mb-8">
-              {/* Mobile Drawer Button */}
+              {/* Mobile Drawer */}
               <div className="md:hidden mb-4">
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -435,7 +433,7 @@ function Admin() {
                 )}
               </div>
 
-              {/* Desktop Horizontal Tabs */}
+              {/* Desktop Tabs */}
               <div className="hidden md:flex flex-wrap items-center gap-1.5 border-b border-border/40 pb-3">
                 {navItems.map((tab) => (
                   <button
@@ -477,7 +475,7 @@ function Admin() {
           </div>
         )}
 
-        {/* Dynamic Section Views */}
+        {/* Dynamic Sections */}
         {isAdding || editingProject ? (
           <ProjectForm
             project={editingProject}
@@ -496,6 +494,8 @@ function Admin() {
               setError("");
             }}
           />
+        ) : activeTab === "comments" ? (
+          <CommentModerationForm />
         ) : activeTab === "homepage" ? (
           <HomepageContentForm />
         ) : activeTab === "featured" ? (

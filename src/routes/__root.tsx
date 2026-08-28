@@ -17,29 +17,42 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CinematicCursor } from "@/components/CinematicCursor";
 import { CinematicClosing } from "@/components/CinematicClosing";
+import { sound } from "@/lib/sound";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-charcoal px-6 relative overflow-hidden">
       <div className="vignette pointer-events-none" />
       <div className="scanlines absolute inset-0 opacity-20 pointer-events-none" />
-      
+
       <div className="max-w-lg text-center relative z-10 border border-border/80 bg-navy/30 p-10 md:p-14 shadow-2xl backdrop-blur-md">
         <p className="label-track text-gold">404 — SCENE NOT FOUND</p>
         <h1 className="title-card mt-6 text-3xl sm:text-5xl text-ivory leading-tight">
+          CUT.
+          <br />
           THIS FRAME DOESN'T EXIST.
         </h1>
         <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
           This cut was left on the cutting room floor or moved to another reel.
         </p>
-        <div className="mt-10">
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
           <Link
             to="/"
+            onClick={() => sound.playNavClick()}
             data-cursor="home →"
             data-magnetic="true"
-            className="label-track inline-block bg-gold px-8 py-4 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-all shadow-lg"
+            className="label-track inline-block bg-gold px-7 py-4 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-all shadow-lg rounded"
           >
-            → BACK TO THE FILM
+            BACK TO HOME →
+          </Link>
+          <Link
+            to="/portfolio"
+            onClick={() => sound.playNavClick()}
+            data-cursor="films →"
+            data-magnetic="true"
+            className="label-track inline-block border border-gold/60 px-7 py-4 !text-[10px] !text-gold hover:bg-gold hover:!text-charcoal transition-all shadow-lg rounded"
+          >
+            VIEW FILMS →
           </Link>
         </div>
       </div>

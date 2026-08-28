@@ -14,8 +14,11 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DigitalMarketingRouteImport } from './routes/digital-marketing'
+import { Route as ApiAiAssistantRouteImport } from './routes/api.ai-assistant'
+import { Route as ApiCommentsRouteImport } from './routes/api.comments'
 import { Route as ApiEnquiriesRouteImport } from './routes/api.enquiries'
 import { Route as ApiFeaturedProjectsRouteImport } from './routes/api.featured-projects'
+import { Route as ApiGoogleDriveRouteImport } from './routes/api.google-drive'
 import { Route as ApiHomepageContentRouteImport } from './routes/api.homepage-content'
 import { Route as ApiResumeRouteImport } from './routes/api.resume'
 import { Route as ApiSeoSettingsRouteImport } from './routes/api.seo-settings'
@@ -56,6 +59,16 @@ const DigitalMarketingRoute = DigitalMarketingRouteImport.update({
   path: '/digital-marketing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiAssistantRoute = ApiAiAssistantRouteImport.update({
+  id: '/api/ai-assistant',
+  path: '/api/ai-assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCommentsRoute = ApiCommentsRouteImport.update({
+  id: '/api/comments',
+  path: '/api/comments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiEnquiriesRoute = ApiEnquiriesRouteImport.update({
   id: '/api/enquiries',
   path: '/api/enquiries',
@@ -64,6 +77,11 @@ const ApiEnquiriesRoute = ApiEnquiriesRouteImport.update({
 const ApiFeaturedProjectsRoute = ApiFeaturedProjectsRouteImport.update({
   id: '/api/featured-projects',
   path: '/api/featured-projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGoogleDriveRoute = ApiGoogleDriveRouteImport.update({
+  id: '/api/google-drive',
+  path: '/api/google-drive',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHomepageContentRoute = ApiHomepageContentRouteImport.update({
@@ -143,8 +161,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/ai-assistant': typeof ApiAiAssistantRoute
+  '/api/comments': typeof ApiCommentsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
   '/api/featured-projects': typeof ApiFeaturedProjectsRoute
+  '/api/google-drive': typeof ApiGoogleDriveRoute
   '/api/homepage-content': typeof ApiHomepageContentRoute
   '/api/resume': typeof ApiResumeRoute
   '/api/seo-settings': typeof ApiSeoSettingsRoute
@@ -166,8 +187,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/ai-assistant': typeof ApiAiAssistantRoute
+  '/api/comments': typeof ApiCommentsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
   '/api/featured-projects': typeof ApiFeaturedProjectsRoute
+  '/api/google-drive': typeof ApiGoogleDriveRoute
   '/api/homepage-content': typeof ApiHomepageContentRoute
   '/api/resume': typeof ApiResumeRoute
   '/api/seo-settings': typeof ApiSeoSettingsRoute
@@ -190,8 +214,11 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/api/ai-assistant': typeof ApiAiAssistantRoute
+  '/api/comments': typeof ApiCommentsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
   '/api/featured-projects': typeof ApiFeaturedProjectsRoute
+  '/api/google-drive': typeof ApiGoogleDriveRoute
   '/api/homepage-content': typeof ApiHomepageContentRoute
   '/api/resume': typeof ApiResumeRoute
   '/api/seo-settings': typeof ApiSeoSettingsRoute
@@ -215,8 +242,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/ai-assistant'
+    | '/api/comments'
     | '/api/enquiries'
     | '/api/featured-projects'
+    | '/api/google-drive'
     | '/api/homepage-content'
     | '/api/resume'
     | '/api/seo-settings'
@@ -238,8 +268,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/ai-assistant'
+    | '/api/comments'
     | '/api/enquiries'
     | '/api/featured-projects'
+    | '/api/google-drive'
     | '/api/homepage-content'
     | '/api/resume'
     | '/api/seo-settings'
@@ -261,8 +294,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/api/ai-assistant'
+    | '/api/comments'
     | '/api/enquiries'
     | '/api/featured-projects'
+    | '/api/google-drive'
     | '/api/homepage-content'
     | '/api/resume'
     | '/api/seo-settings'
@@ -285,8 +321,11 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ContactRoute: typeof ContactRoute
   DigitalMarketingRoute: typeof DigitalMarketingRoute
+  ApiAiAssistantRoute: typeof ApiAiAssistantRoute
+  ApiCommentsRoute: typeof ApiCommentsRoute
   ApiEnquiriesRoute: typeof ApiEnquiriesRoute
   ApiFeaturedProjectsRoute: typeof ApiFeaturedProjectsRoute
+  ApiGoogleDriveRoute: typeof ApiGoogleDriveRoute
   ApiHomepageContentRoute: typeof ApiHomepageContentRoute
   ApiResumeRoute: typeof ApiResumeRoute
   ApiSeoSettingsRoute: typeof ApiSeoSettingsRoute
@@ -340,6 +379,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DigitalMarketingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai-assistant': {
+      id: '/api/ai-assistant'
+      path: '/api/ai-assistant'
+      fullPath: '/api/ai-assistant'
+      preLoaderRoute: typeof ApiAiAssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/comments': {
+      id: '/api/comments'
+      path: '/api/comments'
+      fullPath: '/api/comments'
+      preLoaderRoute: typeof ApiCommentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/enquiries': {
       id: '/api/enquiries'
       path: '/api/enquiries'
@@ -352,6 +405,13 @@ declare module '@tanstack/react-router' {
       path: '/api/featured-projects'
       fullPath: '/api/featured-projects'
       preLoaderRoute: typeof ApiFeaturedProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/google-drive': {
+      id: '/api/google-drive'
+      path: '/api/google-drive'
+      fullPath: '/api/google-drive'
+      preLoaderRoute: typeof ApiGoogleDriveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/homepage-content': {
@@ -461,8 +521,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ContactRoute: ContactRoute,
   DigitalMarketingRoute: DigitalMarketingRoute,
+  ApiAiAssistantRoute: ApiAiAssistantRoute,
+  ApiCommentsRoute: ApiCommentsRoute,
   ApiEnquiriesRoute: ApiEnquiriesRoute,
   ApiFeaturedProjectsRoute: ApiFeaturedProjectsRoute,
+  ApiGoogleDriveRoute: ApiGoogleDriveRoute,
   ApiHomepageContentRoute: ApiHomepageContentRoute,
   ApiResumeRoute: ApiResumeRoute,
   ApiSeoSettingsRoute: ApiSeoSettingsRoute,
