@@ -104,10 +104,17 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
 
     try {
       // Attempt real Supabase OAuth Google Sign-in
-      const redirectUrl = typeof window !== "undefined" ? window.location.href : "";
+      // Use clean origin + pathname so OAuth returns to the exact current project page
+      const redirectUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}${window.location.pathname}`
+          : "https://rohithfilm.vercel.app";
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        ...(redirectUrl ? { options: { redirectTo: redirectUrl } } : {}),
+        options: {
+          redirectTo: redirectUrl,
+        },
       });
 
       if (error) {
