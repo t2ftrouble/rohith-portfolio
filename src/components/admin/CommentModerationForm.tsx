@@ -93,11 +93,10 @@ export function CommentModerationForm() {
                 key={st}
                 type="button"
                 onClick={() => setFilterStatus(st)}
-                className={`label-track px-3 py-1.5 !text-[8px] rounded transition-all cursor-pointer ${
-                  filterStatus === st
+                className={`label-track px-3 py-1.5 !text-[8px] rounded transition-all cursor-pointer ${filterStatus === st
                     ? "bg-gold text-charcoal font-bold shadow-sm"
                     : "text-ivory/70 hover:text-ivory"
-                }`}
+                  }`}
               >
                 {st}
               </button>
@@ -153,15 +152,14 @@ export function CommentModerationForm() {
           {filteredComments.map((c) => (
             <div
               key={c.id}
-              className={`border p-5 rounded space-y-3 transition-colors ${
-                c.status === "PENDING"
+              className={`border p-5 rounded space-y-3 transition-colors ${c.status === "PENDING"
                   ? "border-amber-500/50 bg-amber-500/5"
                   : c.status === "APPROVED"
-                  ? "border-emerald-500/40 bg-navy/30"
-                  : c.status === "REJECTED"
-                  ? "border-red-500/40 bg-red-500/5"
-                  : "border-border/60 bg-charcoal/80 opacity-75"
-              }`}
+                    ? "border-emerald-500/40 bg-navy/30"
+                    : c.status === "REJECTED"
+                      ? "border-red-500/40 bg-red-500/5"
+                      : "border-border/60 bg-charcoal/80 opacity-75"
+                }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
                 <div className="flex items-center gap-3">
@@ -185,15 +183,14 @@ export function CommentModerationForm() {
 
                 <div className="flex items-center gap-2">
                   <span
-                    className={`label-track px-2 py-0.5 !text-[8px] rounded border font-bold ${
-                      c.status === "APPROVED"
+                    className={`label-track px-2 py-0.5 !text-[8px] rounded border font-bold ${c.status === "APPROVED"
                         ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
                         : c.status === "PENDING"
-                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse"
-                        : c.status === "REJECTED"
-                        ? "bg-red-500/20 text-red-400 border-red-500/40"
-                        : "bg-zinc-500/20 text-zinc-400 border-zinc-500/40"
-                    }`}
+                          ? "bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse"
+                          : c.status === "REJECTED"
+                            ? "bg-red-500/20 text-red-400 border-red-500/40"
+                            : "bg-zinc-500/20 text-zinc-400 border-zinc-500/40"
+                      }`}
                   >
                     {c.status === "HIDDEN" ? "ARCHIVED" : c.status}
                   </span>

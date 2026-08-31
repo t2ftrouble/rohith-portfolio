@@ -9,6 +9,7 @@ import { sound } from "@/lib/sound";
 const links = [
   { to: "/", label: "Home" },
   { to: "/portfolio", label: "Portfolio" },
+  { to: "/editing", label: "Editing" },
   { to: "/digital-marketing", label: "Digital Marketing" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },

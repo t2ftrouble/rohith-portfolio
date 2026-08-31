@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DigitalMarketingRouteImport } from './routes/digital-marketing'
+import { Route as EditingRouteImport } from './routes/editing'
 import { Route as ApiAiAssistantRouteImport } from './routes/api.ai-assistant'
 import { Route as ApiCommentsRouteImport } from './routes/api.comments'
 import { Route as ApiEnquiriesRouteImport } from './routes/api.enquiries'
@@ -57,6 +58,11 @@ const ContactRoute = ContactRouteImport.update({
 const DigitalMarketingRoute = DigitalMarketingRouteImport.update({
   id: '/digital-marketing',
   path: '/digital-marketing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditingRoute = EditingRouteImport.update({
+  id: '/editing',
+  path: '/editing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAiAssistantRoute = ApiAiAssistantRouteImport.update({
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/editing': typeof EditingRoute
   '/api/ai-assistant': typeof ApiAiAssistantRoute
   '/api/comments': typeof ApiCommentsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/editing': typeof EditingRoute
   '/api/ai-assistant': typeof ApiAiAssistantRoute
   '/api/comments': typeof ApiCommentsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/digital-marketing': typeof DigitalMarketingRoute
+  '/editing': typeof EditingRoute
   '/api/ai-assistant': typeof ApiAiAssistantRoute
   '/api/comments': typeof ApiCommentsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/editing'
     | '/api/ai-assistant'
     | '/api/comments'
     | '/api/enquiries'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/editing'
     | '/api/ai-assistant'
     | '/api/comments'
     | '/api/enquiries'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/contact'
     | '/digital-marketing'
+    | '/editing'
     | '/api/ai-assistant'
     | '/api/comments'
     | '/api/enquiries'
@@ -321,6 +333,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ContactRoute: typeof ContactRoute
   DigitalMarketingRoute: typeof DigitalMarketingRoute
+  EditingRoute: typeof EditingRoute
   ApiAiAssistantRoute: typeof ApiAiAssistantRoute
   ApiCommentsRoute: typeof ApiCommentsRoute
   ApiEnquiriesRoute: typeof ApiEnquiriesRoute
@@ -377,6 +390,13 @@ declare module '@tanstack/react-router' {
       path: '/digital-marketing'
       fullPath: '/digital-marketing'
       preLoaderRoute: typeof DigitalMarketingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editing': {
+      id: '/editing'
+      path: '/editing'
+      fullPath: '/editing'
+      preLoaderRoute: typeof EditingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/ai-assistant': {
@@ -521,6 +541,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ContactRoute: ContactRoute,
   DigitalMarketingRoute: DigitalMarketingRoute,
+  EditingRoute: EditingRoute,
   ApiAiAssistantRoute: ApiAiAssistantRoute,
   ApiCommentsRoute: ApiCommentsRoute,
   ApiEnquiriesRoute: ApiEnquiriesRoute,

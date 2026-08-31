@@ -13,6 +13,8 @@ export interface SeoSettingsData {
   aboutDescription: string;
   digitalMarketingTitle: string;
   digitalMarketingDescription: string;
+  editingTitle?: string;
+  editingDescription?: string;
   contactTitle: string;
   contactDescription: string;
   updatedAt?: string;
@@ -23,7 +25,7 @@ export const defaultSeoSettings: SeoSettingsData = {
   globalDescription:
     "Rohith V is a Visual Communication student and Filmmaker, Writer, Editor and VFX/CG Artist based in Chennai. Selected work includes One Last Day, Toothpaste, Kadalar and Radhal.",
   globalKeywords:
-    "Rohith V, Filmmaker Chennai, Short Films, VFX Artist, Editor, Director, One Last Day, Toothpaste, Kadalar, Radhal, Visual Communication",
+    "Rohith V, Filmmaker Chennai, Short Films, VFX Artist, Editor, Director, One Last Day, Toothpaste, Kadalar, Radhal, Visual Communication, Video Editing Portfolio",
   globalOgImage: "https://rgbzjfyosfcvskfkzecu.supabase.co/storage/v1/object/public/portfolio-media/hero-street.webp",
   homeTitle: "Rohith V — Filmmaker, Writer, Editor & VFX Artist",
   homeDescription:
@@ -37,6 +39,9 @@ export const defaultSeoSettings: SeoSettingsData = {
   digitalMarketingTitle: "Digital Marketing & Video Ads — Rohith V | Cinematic Commercials",
   digitalMarketingDescription:
     "Cinematic commercials, social reels, and high-converting video ads crafted by a filmmaker. Storytelling that stops the scroll.",
+  editingTitle: "Editing Portfolio | Rohith V",
+  editingDescription:
+    "Editing portfolio showcasing personal edits, promotional films, television work, corporate videos, colour correction, visual finishing and After Effects work by Rohith V.",
   contactTitle: "Contact — Rohith V | Filmmaker & Digital Creator",
   contactDescription:
     "Get in touch with Rohith V, Filmmaker and Digital Creator based in Chennai, Tamil Nadu — film projects, creative collaborations, and digital marketing.",

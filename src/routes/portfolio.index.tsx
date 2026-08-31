@@ -254,6 +254,30 @@ function Portfolio() {
           </AnimatePresence>
         </motion.div>
 
+        {/* Dedicated Editing Portfolio Feature Banner */}
+        <Reveal delay={0.25} className="mt-20">
+          <div className="border border-gold/40 bg-gradient-to-r from-navy/60 via-charcoal/80 to-navy/60 p-8 md:p-12 transition-all hover:border-gold/70 shadow-[0_10px_30px_rgba(201,164,76,0.08)]">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="max-w-2xl space-y-3">
+                <span className="label-track text-gold">FEATURED REEL & CLIENT WORK</span>
+                <h3 className="title-card text-2xl sm:text-3xl md:text-4xl text-ivory">
+                  Explore The Editing Portfolio
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Discover dedicated post-production edits including freelance client work, corporate videos for Skytree Solution, educational campaigns, and TV shows with Google Drive video player streaming.
+                </p>
+              </div>
+              <Link
+                to="/editing"
+                data-cursor="open editing →"
+                className="label-track bg-gold px-8 py-4 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-all inline-block text-center whitespace-nowrap shadow-lg"
+              >
+                VIEW EDITING PORTFOLIO →
+              </Link>
+            </div>
+          </div>
+        </Reveal>
+
         {/* Selected Credits */}
         <Reveal delay={0.3} className="mt-24 border-t border-border pt-16">
           <p className="label-track text-gold">SELECTED CREDITS</p>
