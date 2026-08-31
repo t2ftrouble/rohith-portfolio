@@ -345,6 +345,74 @@ export function formatProjectForSupabase(project: any) {
   return supabaseProject;
 }
 
+export function mergeAndFormatProjectForSupabase(updates: any, existingRow?: any) {
+  if (!existingRow) {
+    return formatProjectForSupabase(updates);
+  }
+
+  const isExplicitDraft = updates.publishStatus === "DRAFT" || updates.status === "DRAFT";
+  const isExplicitPublished = updates.publishStatus === "PUBLISHED" || updates.status === "PUBLISHED" || updates.status === "Released" || updates.status === "Completed";
+
+  const resolvedPublishStatus = isExplicitDraft
+    ? "DRAFT"
+    : isExplicitPublished
+    ? "PUBLISHED"
+    : (existingRow.publish_status === "DRAFT" ? "DRAFT" : "PUBLISHED");
+
+  const resolvedStatus = isExplicitDraft
+    ? "DRAFT"
+    : updates.status || existingRow.status || "Completed";
+
+  const merged = {
+    slug: updates.slug !== undefined ? updates.slug : existingRow.slug,
+    number: updates.number !== undefined ? updates.number : existingRow.number,
+    title: updates.title !== undefined ? updates.title : existingRow.title,
+    type: updates.type !== undefined ? updates.type : existingRow.type,
+    role: updates.role !== undefined ? updates.role : existingRow.role,
+    category: updates.category !== undefined ? updates.category : existingRow.category,
+    description: updates.description !== undefined ? updates.description : existingRow.description,
+    visuals: updates.visuals !== undefined ? updates.visuals : existingRow.visuals,
+    image: updates.image !== undefined ? updates.image : existingRow.image,
+    process: updates.process !== undefined ? updates.process : existingRow.process,
+    year: updates.year !== undefined ? updates.year : existingRow.year,
+    status: resolvedStatus,
+    hasVideo: updates.hasVideo !== undefined ? updates.hasVideo : existingRow.has_video,
+    videoId: updates.videoId !== undefined ? updates.videoId : existingRow.video_id,
+    posterImage: updates.posterImage !== undefined ? updates.posterImage : existingRow.poster_image,
+    showBeforeAfter: updates.showBeforeAfter !== undefined ? updates.showBeforeAfter : existingRow.show_before_after,
+    beforeImage: updates.beforeImage !== undefined ? updates.beforeImage : existingRow.before_image,
+    afterImage: updates.afterImage !== undefined ? updates.afterImage : existingRow.after_image,
+    fullCredits: updates.fullCredits !== undefined ? updates.fullCredits : existingRow.full_credits,
+    client: updates.client !== undefined ? updates.client : existingRow.client,
+    emotionalDescriptor: updates.emotionalDescriptor !== undefined ? updates.emotionalDescriptor : existingRow.emotional_descriptor,
+    whatIFelt: updates.whatIFelt !== undefined ? updates.whatIFelt : existingRow.what_i_felt,
+    galleryImages: updates.galleryImages !== undefined ? updates.galleryImages : existingRow.gallery_images,
+    publishStatus: resolvedPublishStatus,
+    heroImage: updates.heroImage !== undefined ? updates.heroImage : existingRow.hero_image,
+    thumbnailImage: updates.thumbnailImage !== undefined ? updates.thumbnailImage : existingRow.thumbnail_image,
+    featuredThumbnail: updates.featuredThumbnail !== undefined ? updates.featuredThumbnail : existingRow.featured_thumbnail,
+    ogImage: updates.ogImage !== undefined ? updates.ogImage : existingRow.og_image,
+    imageAlt: updates.imageAlt !== undefined ? updates.imageAlt : existingRow.image_alt,
+    logline: updates.logline !== undefined ? updates.logline : existingRow.logline,
+    synopsis: updates.synopsis !== undefined ? updates.synopsis : existingRow.synopsis,
+    directorNote: updates.directorNote !== undefined ? updates.directorNote : existingRow.director_note,
+    duration: updates.duration !== undefined ? updates.duration : existingRow.duration,
+    formatSpecs: updates.formatSpecs !== undefined ? updates.formatSpecs : existingRow.format_specs,
+    tags: updates.tags !== undefined ? updates.tags : existingRow.tags,
+    galleryItems: updates.galleryItems !== undefined ? updates.galleryItems : existingRow.gallery_items,
+    beforeAfterPairs: updates.beforeAfterPairs !== undefined ? updates.beforeAfterPairs : existingRow.before_after_pairs,
+    vfxBreakdowns: updates.vfxBreakdowns !== undefined ? updates.vfxBreakdowns : existingRow.vfx_breakdowns,
+    teamCredits: updates.teamCredits !== undefined ? updates.teamCredits : existingRow.team_credits,
+    awards: updates.awards !== undefined ? updates.awards : existingRow.awards,
+    projectLinks: updates.projectLinks !== undefined ? updates.projectLinks : existingRow.project_links,
+    sectionVisibility: updates.sectionVisibility !== undefined ? updates.sectionVisibility : existingRow.section_visibility,
+    videoConfig: updates.videoConfig !== undefined ? updates.videoConfig : existingRow.video_config,
+    seoSettings: updates.seoSettings !== undefined ? updates.seoSettings : existingRow.seo_settings,
+  };
+
+  return formatProjectForSupabase(merged);
+}
+
 export const Route = createFileRoute("/api/projects/")({
   server: {
     handlers: {
@@ -367,7 +435,10 @@ export const Route = createFileRoute("/api/projects/")({
 
           return new Response(JSON.stringify({ projects: data || [] }), {
             status: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
           });
         } catch (err) {
           console.error("Unexpected error in GET /api/projects:", err);
@@ -418,7 +489,10 @@ export const Route = createFileRoute("/api/projects/")({
 
           return new Response(JSON.stringify({ project: newProject }), {
             status: 201,
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
           });
         } catch (err) {
           console.error("Unexpected error in POST /api/projects:", err);

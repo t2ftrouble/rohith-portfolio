@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyAdminToken } from "@/lib/admin-session";
-import { formatProjectForSupabase } from "./api.projects.index";
+import { mergeAndFormatProjectForSupabase, formatProjectForSupabase } from "./api.projects.index";
 
 export const Route = createFileRoute("/api/projects/$id")({
   server: {
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/projects/$id")({
             status: 200,
             headers: {
               "Content-Type": "application/json",
-              "Cache-Control": "public, max-age=10, s-maxage=30",
+              "Cache-Control": "no-cache, no-store, must-revalidate",
             },
           });
         } catch (err) {
@@ -65,9 +65,8 @@ export const Route = createFileRoute("/api/projects/$id")({
           }
 
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-          const supabaseProject = formatProjectForSupabase(project);
 
-          // 1. Check if row exists by UUID or slug
+          // 1. Check if row exists in database by UUID or slug
           let existingRow: any = null;
           if (isUuid) {
             const { data } = await (supabaseAdmin as any)
@@ -87,6 +86,9 @@ export const Route = createFileRoute("/api/projects/$id")({
               .maybeSingle();
             existingRow = data;
           }
+
+          // 2. Merge existing data with incoming updates to ensure no fields are lost
+          const supabaseProject = mergeAndFormatProjectForSupabase(project, existingRow);
 
           let savedProject: any = null;
 
@@ -127,7 +129,10 @@ export const Route = createFileRoute("/api/projects/$id")({
 
           return new Response(JSON.stringify({ project: savedProject }), {
             status: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
           });
         } catch (err) {
           console.error("[API PUT /api/projects/$id] Unexpected error:", err);
@@ -173,7 +178,10 @@ export const Route = createFileRoute("/api/projects/$id")({
 
           return new Response(JSON.stringify({ success: true }), {
             status: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
           });
         } catch (err) {
           console.error("[API DELETE /api/projects/$id] Error:", err);

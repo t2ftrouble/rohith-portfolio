@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Share2,
   Check,
@@ -67,7 +67,26 @@ export const Route = createFileRoute("/portfolio/$slug")({
 });
 
 function ProjectDetail() {
-  const { project, allProjects } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  const [project, setProject] = useState(loaderData.project);
+  const [allProjects, setAllProjects] = useState(loaderData.allProjects);
+
+  useEffect(() => {
+    if (loaderData.project) setProject(loaderData.project);
+    if (loaderData.allProjects) setAllProjects(loaderData.allProjects);
+  }, [loaderData]);
+
+  useEffect(() => {
+    if (project?.slug) {
+      getProject(project.slug).then((fresh) => {
+        if (fresh) setProject(fresh);
+      });
+      getProjects().then((projs) => {
+        if (projs && projs.length > 0) setAllProjects(projs);
+      });
+    }
+  }, [project?.slug]);
+
   const index = allProjects.findIndex((p) => p.slug === project.slug);
   const prev = allProjects[(index - 1 + allProjects.length) % allProjects.length]!;
   const next = allProjects[(index + 1) % allProjects.length]!;
