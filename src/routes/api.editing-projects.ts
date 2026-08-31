@@ -3,73 +3,80 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyAdminToken } from "@/lib/admin-session";
 import { defaultEditingProjectsSeed, extractGoogleDriveFileId } from "@/lib/editing-projects-cms";
 
-/**
- * Ensures initial 5 editing projects and 18 videos exist in Supabase database.
- * If tables are empty or newly created, seeds them automatically.
- */
-async function ensureEditingProjectsSeeded() {
+const STORAGE_PATH = "config/editing-projects.json";
+
+function getDefaultProjectsWithIds(): any[] {
+  return defaultEditingProjectsSeed.map((p, idx) => ({
+    id: `seed-editing-${p.slug}`,
+    title: p.title,
+    slug: p.slug,
+    projectNumber: p.projectNumber || String(idx + 5).padStart(2, "0"),
+    category: "EDITING",
+    clientName: p.clientName || "",
+    year: p.year || "2024",
+    role: p.role || "Editor",
+    description: p.description || "",
+    synopsis: p.synopsis || p.description || "",
+    logline: p.logline || "",
+    thumbnailUrl: p.thumbnailUrl || "",
+    heroImageUrl: p.heroImageUrl || "",
+    tags: p.tags || [],
+    tools: p.tools || [],
+    editingBreakdown: p.editingBreakdown || [],
+    credits: p.credits || "",
+    status: p.status || "Completed",
+    featured: Boolean(p.featured),
+    published: p.published !== false,
+    displayOrder: idx + 1,
+    notice: p.notice || "",
+    sectionVisibility: p.sectionVisibility || {},
+    seoSettings: p.seoSettings || {},
+    videos: p.videos.map((v, vIdx) => ({
+      id: `seed-video-${p.slug}-${vIdx + 1}`,
+      projectId: `seed-editing-${p.slug}`,
+      title: v.title,
+      videoNumber: v.videoNumber || `Film ${String(vIdx + 1).padStart(2, "0")}`,
+      driveUrl: v.driveUrl || `https://drive.google.com/file/d/${v.driveFileId}/view`,
+      driveFileId: extractGoogleDriveFileId(v.driveFileId || v.driveUrl || ""),
+      thumbnailUrl: v.thumbnailUrl || "",
+      description: v.description || "",
+      duration: v.duration || "",
+      published: v.published !== false,
+      displayOrder: vIdx + 1,
+    })),
+  }));
+}
+
+async function loadFromStorage(): Promise<any[] | null> {
   try {
-    const { count, error } = await (supabaseAdmin as any)
-      .from("editing_projects")
-      .select("*", { count: "exact", head: true });
+    const { data, error } = await supabaseAdmin.storage
+      .from("portfolio-media")
+      .download(STORAGE_PATH);
 
-    if (!error && (count === null || count === 0)) {
-      console.log("Auto-seeding 5 editing projects and 18 videos into Supabase...");
-      for (let i = 0; i < defaultEditingProjectsSeed.length; i++) {
-        const seedProj = defaultEditingProjectsSeed[i];
-        if (!seedProj) continue;
-
-        const { data: createdProj, error: pErr } = await (supabaseAdmin as any)
-          .from("editing_projects")
-          .insert({
-            title: seedProj.title,
-            slug: seedProj.slug,
-            project_number: seedProj.projectNumber,
-            category: "EDITING",
-            client_name: seedProj.clientName || null,
-            year: seedProj.year || "2024",
-            role: seedProj.role,
-            description: seedProj.description,
-            synopsis: seedProj.synopsis || seedProj.description,
-            logline: seedProj.logline || null,
-            thumbnail_url: seedProj.thumbnailUrl || null,
-            hero_image_url: seedProj.heroImageUrl || null,
-            tags: seedProj.tags || [],
-            tools: seedProj.tools || [],
-            editing_breakdown: seedProj.editingBreakdown || [],
-            credits: seedProj.credits || null,
-            status: seedProj.status || "Completed",
-            featured: Boolean(seedProj.featured),
-            published: seedProj.published !== false,
-            display_order: i + 1,
-            notice: seedProj.notice || null,
-            section_visibility: seedProj.sectionVisibility || {},
-            seo_settings: seedProj.seoSettings || {},
-          })
-          .select()
-          .single();
-
-        if (createdProj && !pErr && seedProj.videos && seedProj.videos.length > 0) {
-          const videoInserts = seedProj.videos.map((v, vIdx) => ({
-            project_id: createdProj.id,
-            title: v.title,
-            video_number: v.videoNumber || `Film ${String(vIdx + 1).padStart(2, "0")}`,
-            drive_url: v.driveUrl || `https://drive.google.com/file/d/${v.driveFileId}/view`,
-            drive_file_id: extractGoogleDriveFileId(v.driveFileId || v.driveUrl || ""),
-            thumbnail_url: v.thumbnailUrl || null,
-            description: v.description || null,
-            duration: v.duration || null,
-            published: v.published !== false,
-            display_order: vIdx + 1,
-          }));
-
-          await (supabaseAdmin as any).from("editing_project_videos").insert(videoInserts);
-        }
+    if (!error && data) {
+      const text = await data.text();
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
       }
-      console.log("✓ Successfully seeded editing projects and videos into Supabase");
     }
-  } catch (seedErr) {
-    console.warn("Auto-seeding check failed (table might be initializing):", seedErr);
+  } catch (err) {
+    console.warn("Storage download warning:", err);
+  }
+  return null;
+}
+
+async function saveToStorage(projectsList: any[]): Promise<void> {
+  try {
+    const buffer = Buffer.from(JSON.stringify(projectsList, null, 2), "utf-8");
+    await supabaseAdmin.storage
+      .from("portfolio-media")
+      .upload(STORAGE_PATH, buffer, {
+        contentType: "application/json",
+        upsert: true,
+      });
+  } catch (err) {
+    console.warn("Storage upload warning:", err);
   }
 }
 
@@ -126,77 +133,73 @@ export const Route = createFileRoute("/api/editing-projects")({
     handlers: {
       GET: async ({ request }) => {
         try {
-          await ensureEditingProjectsSeeded();
-
           const url = new URL(request.url);
           const singleId = url.searchParams.get("id");
           const singleSlug = url.searchParams.get("slug");
           const includeDrafts = url.searchParams.get("includeDrafts") === "true";
 
-          if (singleId || singleSlug) {
-            let singleQuery = (supabaseAdmin as any)
+          // 1. Try fetching from Supabase DB table first
+          try {
+            let query = (supabaseAdmin as any)
               .from("editing_projects")
-              .select("*, editing_project_videos(*)");
+              .select("*, editing_project_videos(*)")
+              .order("display_order", { ascending: true });
 
             if (singleId) {
-              singleQuery = singleQuery.eq("id", singleId);
+              query = query.eq("id", singleId);
             } else if (singleSlug) {
-              singleQuery = singleQuery.eq("slug", singleSlug);
+              query = query.eq("slug", singleSlug);
+            } else if (!includeDrafts) {
+              query = query.eq("published", true);
             }
 
-            const { data: projectRow, error: pErr } = await singleQuery.maybeSingle();
+            const { data, error } = await query;
 
-            if (pErr || !projectRow) {
-              return new Response(JSON.stringify({ error: "Editing project not found" }), {
-                status: 404,
+            if (!error && data && data.length > 0) {
+              if (singleId || singleSlug) {
+                const project = formatEditingProjectForClient(data[0], data[0].editing_project_videos || []);
+                return new Response(JSON.stringify({ project }), {
+                  status: 200,
+                  headers: { "Content-Type": "application/json" },
+                });
+              }
+
+              const projects = data.map((row: any) =>
+                formatEditingProjectForClient(row, row.editing_project_videos || [])
+              );
+              return new Response(JSON.stringify({ projects }), {
+                status: 200,
                 headers: { "Content-Type": "application/json" },
               });
             }
-
-            const project = formatEditingProjectForClient(
-              projectRow,
-              projectRow.editing_project_videos || []
-            );
-
-            return new Response(JSON.stringify({ project }), {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            });
+          } catch (dbErr) {
+            console.warn("DB query skipped/failed, checking storage fallback:", dbErr);
           }
 
-          let query = (supabaseAdmin as any)
-            .from("editing_projects")
-            .select("*, editing_project_videos(*)")
-            .order("display_order", { ascending: true });
+          // 2. Fallback to Supabase Storage config/editing-projects.json
+          const storageProjects = (await loadFromStorage()) || getDefaultProjectsWithIds();
+          const filtered = includeDrafts ? storageProjects : storageProjects.filter((p) => p.published !== false);
 
-          if (!includeDrafts) {
-            query = query.eq("published", true);
+          if (singleId || singleSlug) {
+            const found = storageProjects.find((p) => p.id === singleId || p.slug === singleSlug);
+            if (found) {
+              return new Response(JSON.stringify({ project: found }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
           }
 
-          const { data, error } = await query;
-
-          if (error) {
-            console.error("Error fetching editing projects from Supabase:", error);
-            return new Response(JSON.stringify({ error: error.message }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            });
-          }
-
-          const projects = (data || []).map((row: any) =>
-            formatEditingProjectForClient(row, row.editing_project_videos || [])
-          );
-
-          return new Response(JSON.stringify({ projects }), {
+          return new Response(JSON.stringify({ projects: filtered }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
         } catch (err) {
-          console.error("Unexpected error in GET /api/editing-projects:", err);
-          return new Response(
-            JSON.stringify({ error: err instanceof Error ? err.message : "Internal Server Error" }),
-            { status: 500, headers: { "Content-Type": "application/json" } }
-          );
+          console.error("Unexpected error in GET /api/editing-projects, returning default seed:", err);
+          return new Response(JSON.stringify({ projects: getDefaultProjectsWithIds() }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
         }
       },
 
@@ -214,18 +217,40 @@ export const Route = createFileRoute("/api/editing-projects")({
 
           const body = await request.json();
 
+          // Load current project list from storage or defaults
+          let currentList = (await loadFromStorage()) || getDefaultProjectsWithIds();
+
           // Action 1: Reorder
           if (body.action === "reorder" && Array.isArray(body.orderedIds)) {
             const { orderedIds } = body as { orderedIds: string[] };
+            const reorderedList: any[] = [];
             for (let i = 0; i < orderedIds.length; i++) {
               const id = orderedIds[i];
-              if (id) {
-                await (supabaseAdmin as any)
-                  .from("editing_projects")
-                  .update({ display_order: i + 1, project_number: String(i + 1).padStart(2, "0") })
-                  .eq("id", id);
+              const item = currentList.find((p) => p.id === id);
+              if (item) {
+                item.displayOrder = i + 1;
+                item.projectNumber = String(i + 5).padStart(2, "0");
+                reorderedList.push(item);
               }
             }
+            // Append any items that were not in orderedIds
+            currentList.forEach((p) => {
+              if (!reorderedList.find((r) => r.id === p.id)) {
+                reorderedList.push(p);
+              }
+            });
+            await saveToStorage(reorderedList);
+
+            // Also attempt DB update if table exists
+            try {
+              for (let i = 0; i < orderedIds.length; i++) {
+                await (supabaseAdmin as any)
+                  .from("editing_projects")
+                  .update({ display_order: i + 1, project_number: String(i + 5).padStart(2, "0") })
+                  .eq("id", orderedIds[i]);
+              }
+            } catch {}
+
             return new Response(JSON.stringify({ success: true }), {
               status: 200,
               headers: { "Content-Type": "application/json" },
@@ -235,84 +260,34 @@ export const Route = createFileRoute("/api/editing-projects")({
           // Action 2: Duplicate
           if (body.action === "duplicate" && body.id) {
             const { id } = body as { id: string };
-            const { data: original, error: origErr } = await (supabaseAdmin as any)
-              .from("editing_projects")
-              .select("*, editing_project_videos(*)")
-              .eq("id", id)
-              .single();
-
-            if (origErr || !original) {
+            const target = currentList.find((p) => p.id === id);
+            if (!target) {
               return new Response(JSON.stringify({ error: "Original project not found" }), {
                 status: 404,
                 headers: { "Content-Type": "application/json" },
               });
             }
 
-            const newSlug = `${original.slug}-copy-${Date.now().toString(36).slice(-4)}`;
-            const newTitle = `${original.title} (Copy)`;
+            const newId = `edit-proj-${Date.now()}`;
+            const newSlug = `${target.slug}-copy-${Date.now().toString(36).slice(-4)}`;
+            const cloned: any = {
+              ...target,
+              id: newId,
+              title: `${target.title} (Copy)`,
+              slug: newSlug,
+              published: false,
+              displayOrder: currentList.length + 1,
+              videos: (target.videos || []).map((v: any, vIdx: number) => ({
+                ...v,
+                id: `vid-${newId}-${vIdx + 1}`,
+                projectId: newId,
+              })),
+            };
 
-            const { data: clonedProj, error: cloneErr } = await (supabaseAdmin as any)
-              .from("editing_projects")
-              .insert({
-                title: newTitle,
-                slug: newSlug,
-                project_number: original.project_number,
-                category: "EDITING",
-                client_name: original.client_name,
-                year: original.year,
-                role: original.role,
-                description: original.description,
-                synopsis: original.synopsis,
-                logline: original.logline,
-                thumbnail_url: original.thumbnail_url,
-                hero_image_url: original.hero_image_url,
-                tags: original.tags || [],
-                tools: original.tools || [],
-                editing_breakdown: original.editing_breakdown || [],
-                credits: original.credits,
-                status: original.status,
-                featured: false,
-                published: false,
-                display_order: (original.display_order ?? 0) + 1,
-                notice: original.notice,
-                section_visibility: original.section_visibility,
-                seo_settings: original.seo_settings,
-              })
-              .select()
-              .single();
+            currentList.push(cloned);
+            await saveToStorage(currentList);
 
-            if (cloneErr || !clonedProj) {
-              return new Response(JSON.stringify({ error: cloneErr?.message || "Failed to clone project" }), {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-              });
-            }
-
-            let clonedVideos: any[] = [];
-            if (Array.isArray(original.editing_project_videos) && original.editing_project_videos.length > 0) {
-              const videoInserts = original.editing_project_videos.map((v: any) => ({
-                project_id: clonedProj.id,
-                title: v.title,
-                video_number: v.video_number,
-                drive_url: v.drive_url,
-                drive_file_id: v.drive_file_id,
-                thumbnail_url: v.thumbnail_url,
-                description: v.description,
-                duration: v.duration,
-                published: v.published,
-                display_order: v.display_order,
-              }));
-
-              const { data: vData } = await (supabaseAdmin as any)
-                .from("editing_project_videos")
-                .insert(videoInserts)
-                .select();
-
-              if (vData) clonedVideos = vData;
-            }
-
-            const clientProject = formatEditingProjectForClient(clonedProj, clonedVideos);
-            return new Response(JSON.stringify({ project: clientProject }), {
+            return new Response(JSON.stringify({ project: cloned }), {
               status: 201,
               headers: { "Content-Type": "application/json" },
             });
@@ -320,7 +295,6 @@ export const Route = createFileRoute("/api/editing-projects")({
 
           // Action 3: Create Project
           const { project } = body as { project: any };
-
           if (!project || !project.title || !project.slug) {
             return new Response(JSON.stringify({ error: "Title and slug are required" }), {
               status: 400,
@@ -328,77 +302,56 @@ export const Route = createFileRoute("/api/editing-projects")({
             });
           }
 
-          const { data: createdProj, error: pErr } = await (supabaseAdmin as any)
-            .from("editing_projects")
-            .insert({
-              title: project.title,
-              slug: project.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-              project_number: project.projectNumber || "01",
-              category: "EDITING",
-              client_name: project.clientName || null,
-              year: project.year || "2024",
-              role: project.role || "Editor",
-              description: project.description || "",
-              synopsis: project.synopsis || project.description || "",
-              logline: project.logline || null,
-              thumbnail_url: project.thumbnailUrl || null,
-              hero_image_url: project.heroImageUrl || null,
-              tags: Array.isArray(project.tags) ? project.tags : [],
-              tools: Array.isArray(project.tools) ? project.tools : [],
-              editing_breakdown: Array.isArray(project.editingBreakdown) ? project.editingBreakdown : [],
-              credits: project.credits || null,
-              status: project.status || "Completed",
-              featured: Boolean(project.featured),
-              published: project.published !== false,
-              display_order: Number(project.displayOrder) || 0,
-              notice: project.notice || null,
-              section_visibility: project.sectionVisibility || {},
-              seo_settings: project.seoSettings || {},
-            })
-            .select()
-            .single();
-
-          if (pErr || !createdProj) {
-            console.error("Error creating editing project:", pErr);
-            return new Response(JSON.stringify({ error: pErr?.message || "Failed to create project" }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            });
-          }
-
-          let createdVideos: any[] = [];
-          if (Array.isArray(project.videos) && project.videos.length > 0) {
-            const videoInserts = project.videos.map((v: any, vIdx: number) => ({
-              project_id: createdProj.id,
-              title: v.title || `Film ${String(vIdx + 1).padStart(2, "0")}`,
-              video_number: v.videoNumber || `Film ${String(vIdx + 1).padStart(2, "0")}`,
-              drive_url: v.driveUrl || "",
-              drive_file_id: extractGoogleDriveFileId(v.driveFileId || v.driveUrl || ""),
-              thumbnail_url: v.thumbnailUrl || null,
-              description: v.description || null,
-              duration: v.duration || null,
+          const newId = `edit-proj-${Date.now()}`;
+          const newProject: any = {
+            id: newId,
+            title: project.title,
+            slug: project.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+            projectNumber: project.projectNumber || String(currentList.length + 5).padStart(2, "0"),
+            category: "EDITING",
+            clientName: project.clientName || "",
+            year: project.year || "2024",
+            role: project.role || "Editor",
+            description: project.description || "",
+            synopsis: project.synopsis || project.description || "",
+            logline: project.logline || "",
+            thumbnailUrl: project.thumbnailUrl || "",
+            heroImageUrl: project.heroImageUrl || "",
+            tags: Array.isArray(project.tags) ? project.tags : [],
+            tools: Array.isArray(project.tools) ? project.tools : [],
+            editingBreakdown: Array.isArray(project.editingBreakdown) ? project.editingBreakdown : [],
+            credits: project.credits || "",
+            status: project.status || "Completed",
+            featured: Boolean(project.featured),
+            published: project.published !== false,
+            displayOrder: currentList.length + 1,
+            notice: project.notice || "",
+            sectionVisibility: project.sectionVisibility || {},
+            seoSettings: project.seoSettings || {},
+            videos: (project.videos || []).map((v: any, idx: number) => ({
+              id: `vid-${newId}-${idx + 1}`,
+              projectId: newId,
+              title: v.title || `Film ${String(idx + 1).padStart(2, "0")}`,
+              videoNumber: v.videoNumber || `Film ${String(idx + 1).padStart(2, "0")}`,
+              driveUrl: v.driveUrl || "",
+              driveFileId: extractGoogleDriveFileId(v.driveFileId || v.driveUrl || ""),
+              thumbnailUrl: v.thumbnailUrl || "",
+              description: v.description || "",
+              duration: v.duration || "",
               published: v.published !== false,
-              display_order: Number(v.displayOrder) || vIdx + 1,
-            }));
+              displayOrder: idx + 1,
+            })),
+          };
 
-            const { data: vData, error: vErr } = await (supabaseAdmin as any)
-              .from("editing_project_videos")
-              .insert(videoInserts)
-              .select();
+          currentList.push(newProject);
+          await saveToStorage(currentList);
 
-            if (!vErr && vData) {
-              createdVideos = vData;
-            }
-          }
-
-          const clientProject = formatEditingProjectForClient(createdProj, createdVideos);
-
-          return new Response(JSON.stringify({ project: clientProject }), {
+          return new Response(JSON.stringify({ project: newProject }), {
             status: 201,
             headers: { "Content-Type": "application/json" },
           });
         } catch (err) {
-          console.error("Unexpected error in POST /api/editing-projects:", err);
+          console.error("Error in POST /api/editing-projects:", err);
           return new Response(
             JSON.stringify({ error: err instanceof Error ? err.message : "Internal Server Error" }),
             { status: 500, headers: { "Content-Type": "application/json" } }
@@ -428,87 +381,60 @@ export const Route = createFileRoute("/api/editing-projects")({
             });
           }
 
-          const updatePayload: Record<string, any> = {};
-          if (project.title !== undefined) updatePayload["title"] = project.title;
-          if (project.slug !== undefined)
-            updatePayload["slug"] = project.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
-          if (project.projectNumber !== undefined) updatePayload["project_number"] = project.projectNumber;
-          if (project.clientName !== undefined) updatePayload["client_name"] = project.clientName || null;
-          if (project.year !== undefined) updatePayload["year"] = project.year || null;
-          if (project.role !== undefined) updatePayload["role"] = project.role;
-          if (project.description !== undefined) updatePayload["description"] = project.description;
-          if (project.synopsis !== undefined) updatePayload["synopsis"] = project.synopsis;
-          if (project.logline !== undefined) updatePayload["logline"] = project.logline || null;
-          if (project.thumbnailUrl !== undefined) updatePayload["thumbnail_url"] = project.thumbnailUrl || null;
-          if (project.heroImageUrl !== undefined) updatePayload["hero_image_url"] = project.heroImageUrl || null;
-          if (project.tags !== undefined) updatePayload["tags"] = Array.isArray(project.tags) ? project.tags : [];
-          if (project.tools !== undefined) updatePayload["tools"] = Array.isArray(project.tools) ? project.tools : [];
-          if (project.editingBreakdown !== undefined)
-            updatePayload["editing_breakdown"] = Array.isArray(project.editingBreakdown) ? project.editingBreakdown : [];
-          if (project.credits !== undefined) updatePayload["credits"] = project.credits || null;
-          if (project.status !== undefined) updatePayload["status"] = project.status || "Completed";
-          if (project.featured !== undefined) updatePayload["featured"] = Boolean(project.featured);
-          if (project.published !== undefined) updatePayload["published"] = Boolean(project.published);
-          if (project.displayOrder !== undefined) updatePayload["display_order"] = Number(project.displayOrder);
-          if (project.notice !== undefined) updatePayload["notice"] = project.notice || null;
-          if (project.sectionVisibility !== undefined) updatePayload["section_visibility"] = project.sectionVisibility;
-          if (project.seoSettings !== undefined) updatePayload["seo_settings"] = project.seoSettings;
+          let currentList = (await loadFromStorage()) || getDefaultProjectsWithIds();
+          const targetIndex = currentList.findIndex((p) => p.id === id || p.slug === id || p.slug === project.slug);
 
-          const { data: updatedProject, error: updateErr } = await (supabaseAdmin as any)
-            .from("editing_projects")
-            .update(updatePayload)
-            .eq("id", id)
-            .select()
-            .single();
+          let updatedItem: any = null;
 
-          if (updateErr || !updatedProject) {
-            console.error("Error updating editing project:", updateErr);
-            return new Response(JSON.stringify({ error: updateErr?.message || "Failed to update project" }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            });
-          }
-
-          let currentVideos: any[] = [];
-          if (Array.isArray(project.videos)) {
-            await (supabaseAdmin as any).from("editing_project_videos").delete().eq("project_id", id);
-
-            if (project.videos.length > 0) {
-              const videoInserts = project.videos.map((v: any, idx: number) => ({
-                project_id: id,
-                title: v.title || `Film ${String(idx + 1).padStart(2, "0")}`,
-                video_number: v.videoNumber || `Film ${String(idx + 1).padStart(2, "0")}`,
-                drive_url: v.driveUrl || "",
-                drive_file_id: extractGoogleDriveFileId(v.driveFileId || v.driveUrl || ""),
-                thumbnail_url: v.thumbnailUrl || null,
-                description: v.description || null,
-                duration: v.duration || null,
-                published: v.published !== false,
-                display_order: Number(v.displayOrder) || idx + 1,
-              }));
-
-              const { data: vData, error: vErr } = await (supabaseAdmin as any)
-                .from("editing_project_videos")
-                .insert(videoInserts)
-                .select();
-
-              if (!vErr && vData) {
-                currentVideos = vData;
-              }
-            }
+          if (targetIndex >= 0) {
+            const existing = currentList[targetIndex];
+            updatedItem = {
+              ...existing,
+              ...project,
+              id: existing.id,
+              videos: Array.isArray(project.videos)
+                ? project.videos.map((v: any, idx: number) => ({
+                    id: v.id || `vid-${existing.id}-${idx + 1}`,
+                    projectId: existing.id,
+                    title: v.title || `Film ${String(idx + 1).padStart(2, "0")}`,
+                    videoNumber: v.videoNumber || `Film ${String(idx + 1).padStart(2, "0")}`,
+                    driveUrl: v.driveUrl || "",
+                    driveFileId: extractGoogleDriveFileId(v.driveFileId || v.driveUrl || ""),
+                    thumbnailUrl: v.thumbnailUrl || "",
+                    description: v.description || "",
+                    duration: v.duration || "",
+                    published: v.published !== false,
+                    displayOrder: idx + 1,
+                  }))
+                : existing.videos,
+            };
+            currentList[targetIndex] = updatedItem;
           } else {
-            const { data: existingVids } = await (supabaseAdmin as any)
-              .from("editing_project_videos")
-              .select("*")
-              .eq("project_id", id)
-              .order("display_order", { ascending: true });
-
-            currentVideos = existingVids || [];
+            updatedItem = {
+              ...project,
+              id: id.startsWith("seed-") || id.startsWith("edit-proj-") ? id : `edit-proj-${Date.now()}`,
+              videos: Array.isArray(project.videos)
+                ? project.videos.map((v: any, idx: number) => ({
+                    id: v.id || `vid-${id}-${idx + 1}`,
+                    projectId: id,
+                    title: v.title || `Film ${String(idx + 1).padStart(2, "0")}`,
+                    videoNumber: v.videoNumber || `Film ${String(idx + 1).padStart(2, "0")}`,
+                    driveUrl: v.driveUrl || "",
+                    driveFileId: extractGoogleDriveFileId(v.driveFileId || v.driveUrl || ""),
+                    thumbnailUrl: v.thumbnailUrl || "",
+                    description: v.description || "",
+                    duration: v.duration || "",
+                    published: v.published !== false,
+                    displayOrder: idx + 1,
+                  }))
+                : [],
+            };
+            currentList.push(updatedItem);
           }
 
-          const clientProject = formatEditingProjectForClient(updatedProject, currentVideos);
+          await saveToStorage(currentList);
 
-          return new Response(JSON.stringify({ project: clientProject }), {
+          return new Response(JSON.stringify({ project: updatedItem }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
@@ -550,18 +476,9 @@ export const Route = createFileRoute("/api/editing-projects")({
             });
           }
 
-          const { error: delErr } = await (supabaseAdmin as any)
-            .from("editing_projects")
-            .delete()
-            .eq("id", id);
-
-          if (delErr) {
-            console.error("Error deleting editing project:", delErr);
-            return new Response(JSON.stringify({ error: delErr.message }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            });
-          }
+          let currentList = (await loadFromStorage()) || getDefaultProjectsWithIds();
+          currentList = currentList.filter((p) => p.id !== id && p.slug !== id);
+          await saveToStorage(currentList);
 
           return new Response(JSON.stringify({ success: true }), {
             status: 200,
