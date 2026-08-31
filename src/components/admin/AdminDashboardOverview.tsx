@@ -18,6 +18,7 @@ import {
   Radio,
 } from "lucide-react";
 import type { ProjectCMSData } from "@/lib/project-cms";
+import { Scissors } from "lucide-react";
 
 interface AdminDashboardOverviewProps {
   projects: ProjectCMSData[];
@@ -26,6 +27,7 @@ interface AdminDashboardOverviewProps {
     tab:
       | "dashboard"
       | "projects"
+      | "editing-projects"
       | "comments"
       | "media"
       | "social"
@@ -81,14 +83,14 @@ export function AdminDashboardOverview({
   return (
     <div className="space-y-10">
       {/* 1. KEY METRICS CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {/* TOTAL PROJECTS */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* TOTAL FILM PROJECTS */}
         <div
           onClick={() => onNavigateTab("projects")}
           className="border border-border/80 bg-navy/30 p-5 rounded hover:border-gold/60 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
-            <span className="label-track text-gold !text-[10px]">TOTAL PROJECTS</span>
+            <span className="label-track text-gold !text-[10px]">FILM & VFX</span>
             <Film size={16} className="text-gold/60 group-hover:text-gold transition-colors" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
@@ -98,6 +100,24 @@ export function AdminDashboardOverview({
           <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
             <span className="text-emerald-400">● {publishedCount} Published</span>
             {draftCount > 0 && <span className="text-amber-400">● {draftCount} Draft</span>}
+          </div>
+        </div>
+
+        {/* EDITING PROJECTS */}
+        <div
+          onClick={() => onNavigateTab("editing-projects")}
+          className="border border-border/80 bg-navy/30 p-5 rounded hover:border-gold/60 transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="label-track text-gold !text-[10px]">EDITING PORTFOLIO</span>
+            <Scissors size={16} className="text-gold/60 group-hover:text-gold transition-colors" />
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="title-card text-3xl md:text-4xl text-ivory">5+</span>
+            <span className="text-xs text-muted-foreground">projects</span>
+          </div>
+          <div className="mt-2 text-[10px] text-muted-foreground font-mono">
+            <span className="text-emerald-400">● 18 Drive Videos ↗</span>
           </div>
         </div>
 

@@ -38,6 +38,9 @@ import {
   deleteProject,
 } from "@/lib/project-cms";
 
+import { EditingProjectsManager } from "@/components/admin/EditingProjectsManager";
+import { Scissors } from "lucide-react";
+
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
@@ -51,6 +54,7 @@ export const Route = createFileRoute("/admin")({
 export type AdminTab =
   | "dashboard"
   | "projects"
+  | "editing-projects"
   | "comments"
   | "media"
   | "social"
@@ -244,7 +248,8 @@ function Admin() {
 
   const navItems: AdminNavItem[] = [
     { id: "dashboard", label: "DASHBOARD", icon: LayoutDashboard },
-    { id: "projects", label: `PROJECTS (${projects.length})`, icon: Film },
+    { id: "projects", label: `FILM & VFX (${projects.length})`, icon: Film },
+    { id: "editing-projects", label: "EDITING PROJECTS", icon: Scissors },
     { id: "comments", label: "COMMENTS", icon: MessageSquare },
     { id: "media", label: "WEBSITE MEDIA", icon: ImageIcon },
     { id: "social", label: "SOCIAL LINKS", icon: Share2 },
@@ -494,6 +499,8 @@ function Admin() {
               setError("");
             }}
           />
+        ) : activeTab === "editing-projects" ? (
+          <EditingProjectsManager />
         ) : activeTab === "comments" ? (
           <CommentModerationForm />
         ) : activeTab === "homepage" ? (

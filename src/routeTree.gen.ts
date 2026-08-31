@@ -16,6 +16,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DigitalMarketingRouteImport } from './routes/digital-marketing'
 import { Route as ApiAiAssistantRouteImport } from './routes/api.ai-assistant'
 import { Route as ApiCommentsRouteImport } from './routes/api.comments'
+import { Route as ApiEditingProjectsRouteImport } from './routes/api.editing-projects'
 import { Route as ApiEnquiriesRouteImport } from './routes/api.enquiries'
 import { Route as ApiFeaturedProjectsRouteImport } from './routes/api.featured-projects'
 import { Route as ApiGoogleDriveRouteImport } from './routes/api.google-drive'
@@ -67,6 +68,11 @@ const ApiAiAssistantRoute = ApiAiAssistantRouteImport.update({
 const ApiCommentsRoute = ApiCommentsRouteImport.update({
   id: '/api/comments',
   path: '/api/comments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEditingProjectsRoute = ApiEditingProjectsRouteImport.update({
+  id: '/api/editing-projects',
+  path: '/api/editing-projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiEnquiriesRoute = ApiEnquiriesRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/digital-marketing': typeof DigitalMarketingRoute
   '/api/ai-assistant': typeof ApiAiAssistantRoute
   '/api/comments': typeof ApiCommentsRoute
+  '/api/editing-projects': typeof ApiEditingProjectsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
   '/api/featured-projects': typeof ApiFeaturedProjectsRoute
   '/api/google-drive': typeof ApiGoogleDriveRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/digital-marketing': typeof DigitalMarketingRoute
   '/api/ai-assistant': typeof ApiAiAssistantRoute
   '/api/comments': typeof ApiCommentsRoute
+  '/api/editing-projects': typeof ApiEditingProjectsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
   '/api/featured-projects': typeof ApiFeaturedProjectsRoute
   '/api/google-drive': typeof ApiGoogleDriveRoute
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/digital-marketing': typeof DigitalMarketingRoute
   '/api/ai-assistant': typeof ApiAiAssistantRoute
   '/api/comments': typeof ApiCommentsRoute
+  '/api/editing-projects': typeof ApiEditingProjectsRoute
   '/api/enquiries': typeof ApiEnquiriesRoute
   '/api/featured-projects': typeof ApiFeaturedProjectsRoute
   '/api/google-drive': typeof ApiGoogleDriveRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/digital-marketing'
     | '/api/ai-assistant'
     | '/api/comments'
+    | '/api/editing-projects'
     | '/api/enquiries'
     | '/api/featured-projects'
     | '/api/google-drive'
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/digital-marketing'
     | '/api/ai-assistant'
     | '/api/comments'
+    | '/api/editing-projects'
     | '/api/enquiries'
     | '/api/featured-projects'
     | '/api/google-drive'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/digital-marketing'
     | '/api/ai-assistant'
     | '/api/comments'
+    | '/api/editing-projects'
     | '/api/enquiries'
     | '/api/featured-projects'
     | '/api/google-drive'
@@ -323,6 +335,7 @@ export interface RootRouteChildren {
   DigitalMarketingRoute: typeof DigitalMarketingRoute
   ApiAiAssistantRoute: typeof ApiAiAssistantRoute
   ApiCommentsRoute: typeof ApiCommentsRoute
+  ApiEditingProjectsRoute: typeof ApiEditingProjectsRoute
   ApiEnquiriesRoute: typeof ApiEnquiriesRoute
   ApiFeaturedProjectsRoute: typeof ApiFeaturedProjectsRoute
   ApiGoogleDriveRoute: typeof ApiGoogleDriveRoute
@@ -391,6 +404,13 @@ declare module '@tanstack/react-router' {
       path: '/api/comments'
       fullPath: '/api/comments'
       preLoaderRoute: typeof ApiCommentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/editing-projects': {
+      id: '/api/editing-projects'
+      path: '/api/editing-projects'
+      fullPath: '/api/editing-projects'
+      preLoaderRoute: typeof ApiEditingProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/enquiries': {
@@ -523,6 +543,7 @@ const rootRouteChildren: RootRouteChildren = {
   DigitalMarketingRoute: DigitalMarketingRoute,
   ApiAiAssistantRoute: ApiAiAssistantRoute,
   ApiCommentsRoute: ApiCommentsRoute,
+  ApiEditingProjectsRoute: ApiEditingProjectsRoute,
   ApiEnquiriesRoute: ApiEnquiriesRoute,
   ApiFeaturedProjectsRoute: ApiFeaturedProjectsRoute,
   ApiGoogleDriveRoute: ApiGoogleDriveRoute,

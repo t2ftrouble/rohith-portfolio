@@ -1039,51 +1039,170 @@ export function transformSupabaseProject(p: any): Project {
   };
 }
 
-// Get projects directly from Supabase with fallback to defaultProjects (Film, VFX and Editing)
+// Get projects directly from Supabase with full CMS Editing Projects integration
 export async function getProjects(includeDrafts = false): Promise<Project[]> {
   try {
-    const { data, error } = await supabase
+    // 1. Fetch filmmaking & VFX projects from projects table
+    let filmProjects: Project[] = [];
+    const { data: filmData, error: filmErr } = await supabase
       .from("projects")
       .select("*")
       .order("number", { ascending: true });
 
-    if (!error && data && data.length > 0) {
-      const transformed = data.map(transformSupabaseProject);
-      // Merge in any default projects that aren't yet created in Supabase (e.g. the 5 editing projects)
-      const existingSlugs = new Set(transformed.map((p) => p.slug));
-      const missingDefaults = defaultProjects.filter((dp) => !existingSlugs.has(dp.slug));
-      const combined = [...transformed, ...missingDefaults];
-      return includeDrafts ? combined : combined.filter((p) => p.publishStatus !== "DRAFT");
+    if (!filmErr && filmData && filmData.length > 0) {
+      filmProjects = filmData.map(transformSupabaseProject);
+    } else if (typeof window !== "undefined") {
+      try {
+        const res = await fetch("/api/projects");
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.projects)) {
+            filmProjects = json.projects.map(transformSupabaseProject);
+          }
+        }
+      } catch {}
     }
 
-    if (error) {
-      console.warn("Supabase query returned error, trying API endpoint:", error);
+    if (filmProjects.length === 0) {
+      filmProjects = defaultProjects.filter((p) => p.category !== "EDITING");
     }
 
-    // If running in browser and direct query failed, try API route as secondary option
-    if (typeof window !== "undefined") {
-      const response = await fetch("/api/projects");
-      if (response.ok) {
-        const json = await response.json();
-        if (json.projects && Array.isArray(json.projects)) {
-          const transformed = json.projects.map(transformSupabaseProject);
-          const existingSlugs = new Set(transformed.map((p: Project) => p.slug));
-          const missingDefaults = defaultProjects.filter((dp) => !existingSlugs.has(dp.slug));
-          const combined = [...transformed, ...missingDefaults];
-          return includeDrafts ? combined : combined.filter((p: Project) => p.publishStatus !== "DRAFT");
+    // 2. Fetch editing projects from editing_projects + editing_project_videos
+    let editingProjects: Project[] = [];
+    try {
+      const { data: editData, error: editErr } = await supabase
+        .from("editing_projects")
+        .select("*, editing_project_videos(*)")
+        .order("display_order", { ascending: true });
+
+      if (!editErr && editData && editData.length > 0) {
+        editingProjects = editData.map((row: any) => {
+          const vids = (row.editing_project_videos || []).sort(
+            (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
+          );
+          const publishedVids = vids.filter((v: any) => v.published !== false);
+          const driveVideos: ProjectDriveVideo[] = publishedVids.map((v: any) => ({
+            id: v.id || v.drive_file_id,
+            title: v.title,
+            driveFileId: v.drive_file_id || "",
+            thumbnailLabel: v.video_number || "Film",
+            notes: v.description,
+          }));
+
+          const coverImg = row.thumbnail_url || row.hero_image_url || "/assets/about-editroom.webp";
+
+          return {
+            slug: row.slug,
+            number: row.project_number || "05",
+            title: row.title,
+            type: row.client_name || "Freelance / Personal Client Work",
+            role: row.role || "Editor",
+            year: row.year || "2024",
+            status: row.status || "Completed",
+            description: row.description || "",
+            synopsis: row.synopsis || row.description || "",
+            logline: row.logline || undefined,
+            duration: driveVideos.length > 1 ? `${driveVideos.length} FILMS` : "1 FILM",
+            formatSpecs: driveVideos.length > 1 ? "16:9 • MULTI-VIDEO REEL" : "16:9 • GOOGLE DRIVE STREAM",
+            tags: Array.isArray(row.tags) ? row.tags : [],
+            process: [
+              "Reviewing and cataloging raw client footage",
+              "Assembly and rhythm-based rough cutting",
+              "Colour correction and contrast balancing",
+              "Music sync and audio enhancement",
+              "Subtitles, typography and After Effects finishing",
+            ],
+            visuals: `${driveVideos.length} Video Edit${driveVideos.length > 1 ? "s" : ""}, Social Media Cuts, After Effects Assets`,
+            image: resolveImageUrl(coverImg),
+            heroImage: resolveImageUrl(row.hero_image_url || coverImg),
+            thumbnailImage: resolveImageUrl(row.thumbnail_url || coverImg),
+            featuredThumbnail: resolveImageUrl(row.thumbnail_url || coverImg),
+            category: "EDITING" as const,
+            emotionalDescriptor: row.logline || "Every cut shapes the story.",
+            whatIFelt: `Working on ${row.title} taught me how to shape client footage into purposeful visual pacing.`,
+            publishStatus: (row.published ? "PUBLISHED" : "DRAFT") as "PUBLISHED" | "DRAFT",
+            hasVideo: driveVideos.length > 0,
+            videoId: driveVideos[0]?.driveFileId,
+            driveVideos,
+            toolsUsed: Array.isArray(row.tools) ? row.tools : [],
+            editingBreakdown: Array.isArray(row.editing_breakdown) ? row.editing_breakdown : [],
+            notice: row.notice || undefined,
+            seoSettings: row.seo_settings,
+            sectionVisibility: row.section_visibility || defaultSectionVisibility,
+            fullCredits: row.credits || `Role: Editor\n\nEditing, Enhancement, Colour Correction & Finishing: Rohith V`,
+          };
+        });
+      } else if (typeof window !== "undefined") {
+        const res = await fetch(`/api/editing-projects${includeDrafts ? "?includeDrafts=true" : ""}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.projects) && json.projects.length > 0) {
+            editingProjects = json.projects.map((p: any) => {
+              const driveVideos: ProjectDriveVideo[] = (p.videos || [])
+                .filter((v: any) => v.published !== false)
+                .map((v: any) => ({
+                  id: v.id || v.driveFileId,
+                  title: v.title,
+                  driveFileId: v.driveFileId,
+                  thumbnailLabel: v.videoNumber || "Film",
+                  notes: v.description,
+                }));
+              const coverImg = p.thumbnailUrl || p.heroImageUrl || "/assets/about-editroom.webp";
+              return {
+                slug: p.slug,
+                number: p.projectNumber || "05",
+                title: p.title,
+                type: p.clientName || "Freelance / Personal Client Work",
+                role: p.role || "Editor",
+                year: p.year || "2024",
+                status: p.status || "Completed",
+                description: p.description || "",
+                synopsis: p.synopsis || p.description || "",
+                logline: p.logline || undefined,
+                duration: driveVideos.length > 1 ? `${driveVideos.length} FILMS` : "1 FILM",
+                formatSpecs: driveVideos.length > 1 ? "16:9 • MULTI-VIDEO REEL" : "16:9 • GOOGLE DRIVE STREAM",
+                tags: p.tags || [],
+                process: [
+                  "Reviewing and cataloging raw client footage",
+                  "Assembly and rhythm-based rough cutting",
+                  "Colour correction and contrast balancing",
+                  "Music sync and audio enhancement",
+                  "Subtitles, typography and After Effects finishing",
+                ],
+                visuals: `${driveVideos.length} Video Edit${driveVideos.length > 1 ? "s" : ""}, Social Media Cuts, After Effects Assets`,
+                image: resolveImageUrl(coverImg),
+                heroImage: resolveImageUrl(p.heroImageUrl || coverImg),
+                thumbnailImage: resolveImageUrl(p.thumbnailUrl || coverImg),
+                featuredThumbnail: resolveImageUrl(p.thumbnailUrl || coverImg),
+                category: "EDITING" as const,
+                emotionalDescriptor: p.logline || "Every cut shapes the story.",
+                whatIFelt: `Working on ${p.title} taught me how to shape client footage into purposeful visual pacing.`,
+                publishStatus: (p.published ? "PUBLISHED" : "DRAFT") as "PUBLISHED" | "DRAFT",
+                hasVideo: driveVideos.length > 0,
+                videoId: driveVideos[0]?.driveFileId,
+                driveVideos,
+                toolsUsed: p.tools || [],
+                editingBreakdown: p.editingBreakdown || [],
+                notice: p.notice || undefined,
+                seoSettings: p.seoSettings,
+                sectionVisibility: p.sectionVisibility || defaultSectionVisibility,
+                fullCredits: p.credits || `Role: Editor\n\nEditing, Enhancement, Colour Correction & Finishing: Rohith V`,
+              };
+            });
+          }
         }
       }
+    } catch (e) {
+      console.warn("Editing projects query failed, falling back to default editing projects:", e);
     }
 
-    if (error) {
-      throw error;
+    if (editingProjects.length === 0) {
+      editingProjects = defaultProjects.filter((p) => p.category === "EDITING");
     }
 
-    const transformed = (data || []).map(transformSupabaseProject);
-    const existingSlugs = new Set(transformed.map((p) => p.slug));
-    const missingDefaults = defaultProjects.filter((dp) => !existingSlugs.has(dp.slug));
-    const combined = [...transformed, ...missingDefaults];
-    return includeDrafts ? combined : combined.filter((p: Project) => p.publishStatus !== "DRAFT");
+    // Combine filmmaking & VFX projects with editing projects
+    const combined = [...filmProjects, ...editingProjects];
+    return includeDrafts ? combined : combined.filter((p) => p.publishStatus !== "DRAFT");
   } catch (error) {
     console.error("getProjects error, falling back to default projects:", error);
     return includeDrafts ? defaultProjects : defaultProjects.filter((p) => p.publishStatus !== "DRAFT");
@@ -1095,6 +1214,71 @@ export const projects = defaultProjects;
 
 export const getProject = async (slug: string): Promise<Project | undefined> => {
   try {
+    // 1. Try editing_projects table first if editing slug
+    const { data: editData, error: editErr } = await supabase
+      .from("editing_projects")
+      .select("*, editing_project_videos(*)")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (!editErr && editData) {
+      const vids = (editData.editing_project_videos || []).sort(
+        (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
+      );
+      const publishedVids = vids.filter((v: any) => v.published !== false);
+      const driveVideos: ProjectDriveVideo[] = publishedVids.map((v: any) => ({
+        id: v.id || v.drive_file_id,
+        title: v.title,
+        driveFileId: v.drive_file_id || "",
+        thumbnailLabel: v.video_number || "Film",
+        notes: v.description,
+      }));
+
+      const coverImg = editData.thumbnail_url || editData.hero_image_url || "/assets/about-editroom.webp";
+
+      return {
+        slug: editData.slug,
+        number: editData.project_number || "05",
+        title: editData.title,
+        type: editData.client_name || "Freelance / Personal Client Work",
+        role: editData.role || "Editor",
+        year: editData.year || "2024",
+        status: editData.status || "Completed",
+        description: editData.description || "",
+        synopsis: editData.synopsis || editData.description || "",
+        logline: editData.logline || undefined,
+        duration: driveVideos.length > 1 ? `${driveVideos.length} FILMS` : "1 FILM",
+        formatSpecs: driveVideos.length > 1 ? "16:9 • MULTI-VIDEO REEL" : "16:9 • GOOGLE DRIVE STREAM",
+        tags: Array.isArray(editData.tags) ? editData.tags : [],
+        process: [
+          "Reviewing and cataloging raw client footage",
+          "Assembly and rhythm-based rough cutting",
+          "Colour correction and contrast balancing",
+          "Music sync and audio enhancement",
+          "Subtitles, typography and After Effects finishing",
+        ],
+        visuals: `${driveVideos.length} Video Edit${driveVideos.length > 1 ? "s" : ""}, Social Media Cuts, After Effects Assets`,
+        image: resolveImageUrl(coverImg),
+        heroImage: resolveImageUrl(editData.hero_image_url || coverImg),
+        thumbnailImage: resolveImageUrl(editData.thumbnail_url || coverImg),
+        featuredThumbnail: resolveImageUrl(editData.thumbnail_url || coverImg),
+        category: "EDITING" as const,
+        emotionalDescriptor: editData.logline || "Every cut shapes the story.",
+        whatIFelt: `Working on ${editData.title} taught me how to shape client footage into purposeful visual pacing.`,
+        publishStatus: (editData.published ? "PUBLISHED" : "DRAFT") as "PUBLISHED" | "DRAFT",
+        hasVideo: driveVideos.length > 0,
+        videoId: driveVideos[0]?.driveFileId,
+        driveVideos,
+        toolsUsed: Array.isArray(editData.tools) ? editData.tools : [],
+        editingBreakdown: Array.isArray(editData.editing_breakdown) ? editData.editing_breakdown : [],
+        notice: editData.notice || undefined,
+        seoSettings: editData.seo_settings,
+        sectionVisibility: editData.section_visibility || defaultSectionVisibility,
+        fullCredits: editData.credits || `Role: Editor\n\nEditing, Enhancement, Colour Correction & Finishing: Rohith V`,
+      };
+    }
+
+    // 2. Try projects table for film/VFX projects
     const { data, error } = await supabase
       .from("projects")
       .select("*")
