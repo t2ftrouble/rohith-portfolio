@@ -542,7 +542,7 @@ export function editingProjectToUniversalProject(cms: EditingProjectCMSData): Pr
     title: v.title,
     driveFileId: extractGoogleDriveFileId(v.driveFileId || v.driveUrl || ""),
     thumbnailLabel: v.videoNumber || "Film",
-    notes: v.description,
+    notes: v.description || undefined,
   }));
 
   const mainDriveVideo = driveVideos[0];

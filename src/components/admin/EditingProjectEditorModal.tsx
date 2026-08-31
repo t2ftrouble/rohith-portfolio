@@ -170,7 +170,13 @@ export function EditingProjectEditorModal({
   const handleUpdateVideo = (index: number, updates: Partial<EditingProjectVideoFormData>) => {
     setFormData((prev) => {
       const newVideos = [...prev.videos];
-      const target = { ...newVideos[index], ...updates };
+      const current = newVideos[index];
+      if (!current) return prev;
+
+      const target: EditingProjectVideoFormData = {
+        ...current,
+        ...updates,
+      };
 
       // If user pasted a driveUrl, automatically extract the driveFileId
       if (updates.driveUrl !== undefined) {
@@ -208,7 +214,10 @@ export function EditingProjectEditorModal({
       if (targetIndex < 0 || targetIndex >= newVideos.length) return prev;
 
       const temp = newVideos[index];
-      newVideos[index] = newVideos[targetIndex];
+      const target = newVideos[targetIndex];
+      if (!temp || !target) return prev;
+
+      newVideos[index] = target;
       newVideos[targetIndex] = temp;
 
       return {
@@ -221,11 +230,17 @@ export function EditingProjectEditorModal({
   const handleDuplicateVideo = (index: number) => {
     setFormData((prev) => {
       const source = prev.videos[index];
+      if (!source) return prev;
+
       const duplicate: EditingProjectVideoFormData = {
-        ...source,
-        id: undefined,
         title: `${source.title} (Copy)`,
         videoNumber: `Film ${String(prev.videos.length + 1).padStart(2, "0")}`,
+        driveUrl: source.driveUrl || "",
+        driveFileId: source.driveFileId || "",
+        description: source.description || "",
+        duration: source.duration || "",
+        thumbnailUrl: source.thumbnailUrl || "",
+        published: source.published !== false,
         displayOrder: prev.videos.length + 1,
       };
       return {
@@ -277,7 +292,14 @@ export function EditingProjectEditorModal({
   const handleUpdateBreakdown = (index: number, updates: Partial<{ title: string; description: string; tools: string[] }>) => {
     setFormData((prev) => {
       const newItems = [...prev.editingBreakdown];
-      newItems[index] = { ...newItems[index], ...updates };
+      const current = newItems[index];
+      if (!current) return prev;
+
+      newItems[index] = {
+        title: updates.title !== undefined ? updates.title : current.title,
+        description: updates.description !== undefined ? updates.description : current.description,
+        tools: updates.tools !== undefined ? updates.tools : (current.tools || []),
+      };
       return { ...prev, editingBreakdown: newItems };
     });
   };

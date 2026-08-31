@@ -149,6 +149,88 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Synchronize state whenever the project prop changes
+  useEffect(() => {
+    if (project) {
+      setFormData({
+        slug: project.slug || "",
+        number: project.number || "01",
+        title: project.title || "",
+        type: project.type || "Short Film",
+        role: project.role || "Story • Director • Editor",
+        year: project.year || new Date().getFullYear().toString(),
+        status: project.status || "Released",
+        description: project.description || "",
+        visuals: project.visuals || "Film video, poster, stills",
+        category: (project.category || "FILMMAKING") as ProjectFormData["category"],
+        hasVideo: project.hasVideo || false,
+        videoId: project.videoId || "",
+        fullCredits: project.fullCredits || "",
+        client: project.client || "",
+        emotionalDescriptor: project.emotionalDescriptor || "",
+        whatIFelt: project.whatIFelt || "",
+        publishStatus: (project.publishStatus || "PUBLISHED") as "PUBLISHED" | "DRAFT",
+
+        logline: project.logline || "",
+        synopsis: project.synopsis || "",
+        directorNote: project.directorNote || "",
+        duration: project.duration || "",
+        formatSpecs: project.formatSpecs || "",
+        tags: project.tags?.join(", ") || "",
+        imageAlt: project.imageAlt || "",
+        seoTitle: project.seoSettings?.seoTitle || "",
+        metaDescription: project.seoSettings?.metaDescription || "",
+        keywords: project.seoSettings?.keywords || "",
+        ogTitle: project.seoSettings?.ogTitle || "",
+        ogDescription: project.seoSettings?.ogDescription || "",
+        canonicalUrl: project.seoSettings?.canonicalUrl || "",
+        videoTitle: project.videoConfig?.title || "",
+        videoUrl: project.videoConfig?.videoUrl || "",
+      });
+
+      setCoverImage(project.image || "");
+      setHeroImage(project.heroImage || "");
+      setThumbnailImage(project.thumbnailImage || "");
+      setFeaturedThumbnail(project.featuredThumbnail || "");
+      setPosterImage(project.posterImage || "");
+      setOgImage(project.ogImage || "");
+
+      setBeforeAfterPairs(
+        project.beforeAfterPairs && project.beforeAfterPairs.length > 0
+          ? project.beforeAfterPairs
+          : project.beforeImage && project.afterImage
+          ? [
+              {
+                id: "pair-1",
+                beforeImage: project.beforeImage,
+                afterImage: project.afterImage,
+                beforeLabel: "BEFORE",
+                afterLabel: "AFTER",
+                title: "Color Grade & VFX Pass",
+              },
+            ]
+          : []
+      );
+
+      setGalleryItems(
+        project.galleryItems && project.galleryItems.length > 0
+          ? project.galleryItems
+          : (project.galleryImages || []).map((img, i) => ({
+              url: img,
+              category: "Film Stills",
+              order: i,
+            }))
+      );
+
+      setVfxBreakdowns(project.vfxBreakdowns || []);
+      setTeamCredits(project.teamCredits || []);
+      setAwards(project.awards || []);
+      setProjectLinks(project.projectLinks || []);
+      setSectionVisibility(project.sectionVisibility || defaultSectionVisibility);
+      setProcessText(project.process?.join("\n") || "");
+    }
+  }, [project]);
+
   // Modals
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);

@@ -171,7 +171,10 @@ export function EditingProjectsManager() {
 
     const newProjects = [...projects];
     const temp = newProjects[index];
-    newProjects[index] = newProjects[targetIndex];
+    const target = newProjects[targetIndex];
+    if (!temp || !target) return;
+
+    newProjects[index] = target;
     newProjects[targetIndex] = temp;
 
     setProjects(newProjects);

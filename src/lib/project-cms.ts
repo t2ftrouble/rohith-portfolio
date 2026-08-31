@@ -89,34 +89,89 @@ export async function getProjects(): Promise<ProjectCMSData[]> {
     if (!error && data && data.length > 0) {
       projectsData = data;
     } else if (typeof window !== "undefined") {
-      // Fall back to API route if direct query didn't return data
-      const response = await fetch("/api/projects");
-      if (response.ok) {
-        const json = await response.json();
-        if (json.projects && Array.isArray(json.projects)) {
-          projectsData = json.projects;
+      // Fall back to API route which auto-seeds default projects
+      try {
+        const response = await fetch("/api/projects");
+        if (response.ok) {
+          const json = await response.json();
+          if (json.projects && Array.isArray(json.projects) && json.projects.length > 0) {
+            projectsData = json.projects;
+          }
         }
+      } catch (apiErr) {
+        console.warn("Fetch /api/projects failed:", apiErr);
       }
     }
 
     if (!projectsData || projectsData.length === 0) {
-      if (error) throw error;
+      // Return default film projects as fallback CMS items with slug IDs
+      const { defaultProjects } = await import("@/data/projects");
+      return defaultProjects
+        .filter((dp) => dp.category !== "EDITING")
+        .map((dp) => ({
+          id: dp.slug,
+          slug: dp.slug,
+          number: dp.number,
+          title: dp.title,
+          type: dp.type,
+          role: dp.role,
+          year: dp.year || "",
+          status: dp.status || "",
+          description: dp.description || "",
+          process: dp.process || [],
+          visuals: dp.visuals || "",
+          image: dp.image || "",
+          category: dp.category || "FILMMAKING",
+          hasVideo: Boolean(dp.hasVideo),
+          videoId: dp.videoId || "",
+          credits: [],
+          fullCredits: dp.fullCredits || "",
+          galleryImages: dp.galleryImages || [],
+          client: dp.client || "",
+          posterImage: dp.posterImage || "",
+          showBeforeAfter: Boolean(dp.showBeforeAfter),
+          beforeImage: dp.beforeImage || "",
+          afterImage: dp.afterImage || "",
+          emotionalDescriptor: dp.emotionalDescriptor || "",
+          whatIFelt: dp.whatIFelt || "",
+          publishStatus: dp.publishStatus || "PUBLISHED",
+          heroImage: dp.heroImage || dp.image,
+          thumbnailImage: dp.thumbnailImage || dp.image,
+          featuredThumbnail: dp.featuredThumbnail || dp.image,
+          ogImage: dp.ogImage || "",
+          imageAlt: dp.imageAlt || `${dp.title} — ${dp.type}`,
+          logline: dp.logline || "",
+          synopsis: dp.synopsis || dp.description || "",
+          directorNote: dp.directorNote || "",
+          duration: dp.duration || "",
+          formatSpecs: dp.formatSpecs || "",
+          tags: dp.tags || [],
+          galleryItems: dp.galleryItems || [],
+          beforeAfterPairs: dp.beforeAfterPairs || [],
+          vfxBreakdowns: dp.vfxBreakdowns || [],
+          teamCredits: dp.teamCredits || [],
+          awards: dp.awards || [],
+          projectLinks: dp.projectLinks || [],
+          sectionVisibility: dp.sectionVisibility || defaultSectionVisibility,
+          videoConfig: dp.videoConfig || {},
+          seoSettings: dp.seoSettings || {},
+        }));
     }
 
     // Transform Supabase data to CMS format
     return projectsData.map((p: any) => ({
-      id: p.id,
+      id: p.id || p.slug,
       slug: p.slug,
-      number: p.number,
-      title: p.title,
-      type: p.type,
-      role: p.role,
+      number: p.number || "01",
+      title: p.title || "",
+      type: p.type || "Short Film",
+      role: p.role || "Director",
       year: p.year || "",
       status: p.status || "",
       description: p.description || "",
-      process: p.process || [],
+      process: Array.isArray(p.process) ? p.process : [],
       visuals: p.visuals || "",
-      image: p.image || "",
+      image: p.image || p.hero_image || p.thumbnail_image || "",
       category: p.category || "FILMMAKING",
       hasVideo: Boolean(p.has_video),
       videoId: p.video_id || "",
@@ -134,13 +189,13 @@ export async function getProjects(): Promise<ProjectCMSData[]> {
       publishStatus: (p.publish_status === "DRAFT" || p.status === "DRAFT") ? "DRAFT" : "PUBLISHED",
 
       // CMS v2 fields
-      heroImage: p.hero_image || "",
-      thumbnailImage: p.thumbnail_image || "",
-      featuredThumbnail: p.featured_thumbnail || "",
+      heroImage: p.hero_image || p.image || "",
+      thumbnailImage: p.thumbnail_image || p.image || "",
+      featuredThumbnail: p.featured_thumbnail || p.image || "",
       ogImage: p.og_image || "",
-      imageAlt: p.image_alt || "",
+      imageAlt: p.image_alt || `${p.title} — ${p.type}`,
       logline: p.logline || "",
-      synopsis: p.synopsis || "",
+      synopsis: p.synopsis || p.description || "",
       directorNote: p.director_note || "",
       duration: p.duration || "",
       formatSpecs: p.format_specs || "",
@@ -157,7 +212,7 @@ export async function getProjects(): Promise<ProjectCMSData[]> {
     }));
   } catch (error) {
     console.error("Error loading projects from Supabase:", error);
-    throw new Error(error instanceof Error ? error.message : "Failed to load projects from database");
+    return [];
   }
 }
 

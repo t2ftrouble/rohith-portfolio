@@ -1,90 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyAdminToken } from "@/lib/admin-session";
-
-function formatProjectForSupabase(project: any) {
-  const supabaseProject: Record<string, any> = {};
-
-  if (project.slug !== undefined) supabaseProject["slug"] = project.slug;
-  if (project.number !== undefined) supabaseProject["number"] = project.number;
-  if (project.title !== undefined) supabaseProject["title"] = project.title;
-  if (project.type !== undefined) supabaseProject["type"] = project.type;
-  if (project.role !== undefined) supabaseProject["role"] = project.role;
-  if (project.category !== undefined) supabaseProject["category"] = project.category;
-  if (project.description !== undefined) supabaseProject["description"] = project.description;
-  if (project.visuals !== undefined) supabaseProject["visuals"] = project.visuals;
-  if (project.image !== undefined) supabaseProject["image"] = project.image;
-
-  if (project.process !== undefined) {
-    supabaseProject["process"] = Array.isArray(project.process) ? project.process : [];
-  }
-
-  if (project.year !== undefined) supabaseProject["year"] = project.year || null;
-  if (project.status !== undefined) supabaseProject["status"] = project.status || null;
-  if (project.hasVideo !== undefined) supabaseProject["has_video"] = Boolean(project.hasVideo);
-  if (project.videoId !== undefined) supabaseProject["video_id"] = project.videoId || null;
-  if (project.posterImage !== undefined) supabaseProject["poster_image"] = project.posterImage || null;
-  if (project.showBeforeAfter !== undefined) supabaseProject["show_before_after"] = Boolean(project.showBeforeAfter);
-  if (project.beforeImage !== undefined) supabaseProject["before_image"] = project.beforeImage || null;
-  if (project.afterImage !== undefined) supabaseProject["after_image"] = project.afterImage || null;
-  if (project.fullCredits !== undefined) supabaseProject["full_credits"] = project.fullCredits || null;
-  if (project.client !== undefined) supabaseProject["client"] = project.client || null;
-  if (project.emotionalDescriptor !== undefined) supabaseProject["emotional_descriptor"] = project.emotionalDescriptor || null;
-  if (project.whatIFelt !== undefined) supabaseProject["what_i_felt"] = project.whatIFelt || null;
-
-  if (project.galleryImages !== undefined) {
-    supabaseProject["gallery_images"] = Array.isArray(project.galleryImages) ? project.galleryImages : [];
-  }
-
-  if (project.publishStatus !== undefined) {
-    supabaseProject["publish_status"] = project.publishStatus === "DRAFT" ? "DRAFT" : "PUBLISHED";
-  }
-
-  // CMS v2 columns
-  if (project.heroImage !== undefined) supabaseProject["hero_image"] = project.heroImage || null;
-  if (project.thumbnailImage !== undefined) supabaseProject["thumbnail_image"] = project.thumbnailImage || null;
-  if (project.featuredThumbnail !== undefined) supabaseProject["featured_thumbnail"] = project.featuredThumbnail || null;
-  if (project.ogImage !== undefined) supabaseProject["og_image"] = project.ogImage || null;
-  if (project.imageAlt !== undefined) supabaseProject["image_alt"] = project.imageAlt || null;
-  if (project.logline !== undefined) supabaseProject["logline"] = project.logline || null;
-  if (project.synopsis !== undefined) supabaseProject["synopsis"] = project.synopsis || null;
-  if (project.directorNote !== undefined) supabaseProject["director_note"] = project.directorNote || null;
-  if (project.duration !== undefined) supabaseProject["duration"] = project.duration || null;
-  if (project.formatSpecs !== undefined) supabaseProject["format_specs"] = project.formatSpecs || null;
-
-  if (project.tags !== undefined) {
-    supabaseProject["tags"] = Array.isArray(project.tags) ? project.tags : [];
-  }
-  if (project.galleryItems !== undefined) {
-    supabaseProject["gallery_items"] = Array.isArray(project.galleryItems) ? project.galleryItems : [];
-  }
-  if (project.beforeAfterPairs !== undefined) {
-    supabaseProject["before_after_pairs"] = Array.isArray(project.beforeAfterPairs) ? project.beforeAfterPairs : [];
-  }
-  if (project.vfxBreakdowns !== undefined) {
-    supabaseProject["vfx_breakdowns"] = Array.isArray(project.vfxBreakdowns) ? project.vfxBreakdowns : [];
-  }
-  if (project.teamCredits !== undefined) {
-    supabaseProject["team_credits"] = Array.isArray(project.teamCredits) ? project.teamCredits : [];
-  }
-  if (project.awards !== undefined) {
-    supabaseProject["awards"] = Array.isArray(project.awards) ? project.awards : [];
-  }
-  if (project.projectLinks !== undefined) {
-    supabaseProject["project_links"] = Array.isArray(project.projectLinks) ? project.projectLinks : [];
-  }
-  if (project.sectionVisibility !== undefined) {
-    supabaseProject["section_visibility"] = project.sectionVisibility || {};
-  }
-  if (project.videoConfig !== undefined) {
-    supabaseProject["video_config"] = project.videoConfig || {};
-  }
-  if (project.seoSettings !== undefined) {
-    supabaseProject["seo_settings"] = project.seoSettings || {};
-  }
-
-  return supabaseProject;
-}
+import { formatProjectForSupabase } from "./api.projects.index";
 
 export const Route = createFileRoute("/api/projects/$id")({
   server: {
@@ -93,13 +10,13 @@ export const Route = createFileRoute("/api/projects/$id")({
         try {
           const { id } = params as { id: string };
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-          let query = supabaseAdmin.from("projects").select("*");
+          let query = (supabaseAdmin as any).from("projects").select("*");
           if (isUuid) {
             query = query.eq("id", id);
           } else {
             query = query.eq("slug", id);
           }
-          const { data, error } = await query.single();
+          const { data, error } = await query.maybeSingle();
           if (error || !data) {
             return new Response(JSON.stringify({ error: "Project not found" }), {
               status: 404,
@@ -140,23 +57,75 @@ export const Route = createFileRoute("/api/projects/$id")({
             });
           }
 
-          const supabaseProject = formatProjectForSupabase(project);
-
-          const { data: updatedProject, error } = await (supabaseAdmin.from("projects") as any)
-            .update(supabaseProject)
-            .eq("id", id)
-            .select()
-            .single();
-
-          if (error) {
-            console.error(`[API PUT /api/projects/${id}] Supabase error:`, error);
-            return new Response(JSON.stringify({ error: error.message || "Failed to update project in database" }), {
-              status: 500,
+          if (!project) {
+            return new Response(JSON.stringify({ error: "Project payload is required" }), {
+              status: 400,
               headers: { "Content-Type": "application/json" },
             });
           }
 
-          return new Response(JSON.stringify({ project: updatedProject }), {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          const supabaseProject = formatProjectForSupabase(project);
+
+          // 1. Check if row exists by UUID or slug
+          let existingRow: any = null;
+          if (isUuid) {
+            const { data } = await (supabaseAdmin as any)
+              .from("projects")
+              .select("*")
+              .eq("id", id)
+              .maybeSingle();
+            existingRow = data;
+          }
+
+          if (!existingRow && (project.slug || id)) {
+            const targetSlug = project.slug || id;
+            const { data } = await (supabaseAdmin as any)
+              .from("projects")
+              .select("*")
+              .eq("slug", targetSlug)
+              .maybeSingle();
+            existingRow = data;
+          }
+
+          let savedProject: any = null;
+
+          if (existingRow) {
+            // Update existing row
+            const { data: updated, error: updateErr } = await (supabaseAdmin as any)
+              .from("projects")
+              .update(supabaseProject)
+              .eq("id", existingRow.id)
+              .select()
+              .single();
+
+            if (updateErr || !updated) {
+              console.error(`[API PUT /api/projects/${id}] Update error:`, updateErr);
+              return new Response(JSON.stringify({ error: updateErr?.message || "Failed to update project in database" }), {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
+            savedProject = updated;
+          } else {
+            // If row does not exist yet (e.g. newly saving a default project), insert it
+            const { data: inserted, error: insertErr } = await (supabaseAdmin as any)
+              .from("projects")
+              .insert(supabaseProject)
+              .select()
+              .single();
+
+            if (insertErr || !inserted) {
+              console.error(`[API PUT /api/projects/${id}] Insert error:`, insertErr);
+              return new Response(JSON.stringify({ error: insertErr?.message || "Failed to persist project in database" }), {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
+            savedProject = inserted;
+          }
+
+          return new Response(JSON.stringify({ project: savedProject }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
@@ -183,9 +152,16 @@ export const Route = createFileRoute("/api/projects/$id")({
             });
           }
 
-          const { error } = await (supabaseAdmin.from("projects") as any)
-            .delete()
-            .eq("id", id);
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let deleteQuery = (supabaseAdmin as any).from("projects").delete();
+
+          if (isUuid) {
+            deleteQuery = deleteQuery.eq("id", id);
+          } else {
+            deleteQuery = deleteQuery.eq("slug", id);
+          }
+
+          const { error } = await deleteQuery;
 
           if (error) {
             console.error("Error deleting project:", error);
@@ -200,7 +176,7 @@ export const Route = createFileRoute("/api/projects/$id")({
             headers: { "Content-Type": "application/json" },
           });
         } catch (err) {
-          console.error("Unexpected error in DELETE /api/projects/$id:", err);
+          console.error("[API DELETE /api/projects/$id] Error:", err);
           return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Internal Server Error" }), {
             status: 500,
             headers: { "Content-Type": "application/json" },

@@ -96,8 +96,8 @@ export interface ProjectDriveVideo {
   id: string;
   title: string;
   driveFileId: string;
-  thumbnailLabel?: string;
-  notes?: string;
+  thumbnailLabel?: string | undefined;
+  notes?: string | undefined;
 }
 
 export interface EditingBreakdownItem {
@@ -1015,7 +1015,7 @@ export function transformSupabaseProject(p: any): Project {
     fullCredits: p.full_credits || p.fullCredits || defaultFallback?.fullCredits,
     emotionalDescriptor: p.emotional_descriptor || defaultFallback?.emotionalDescriptor,
     whatIFelt: p.what_i_felt || defaultFallback?.whatIFelt,
-    publishStatus: p.publish_status || "PUBLISHED",
+    publishStatus: (p.publish_status === "DRAFT" || p.status === "DRAFT") ? "DRAFT" : (p.publish_status || "PUBLISHED"),
     logline: p.logline || defaultFallback?.logline,
     synopsis: p.synopsis || p.description || defaultFallback?.synopsis,
     directorNote: p.director_note || defaultFallback?.directorNote,
@@ -1215,7 +1215,7 @@ export const projects = defaultProjects;
 export const getProject = async (slug: string): Promise<Project | undefined> => {
   try {
     // 1. Try editing_projects table first if editing slug
-    const { data: editData, error: editErr } = await supabase
+    const { data: editData, error: editErr } = await (supabase as any)
       .from("editing_projects")
       .select("*, editing_project_videos(*)")
       .eq("slug", slug)
@@ -1231,7 +1231,7 @@ export const getProject = async (slug: string): Promise<Project | undefined> => 
         title: v.title,
         driveFileId: v.drive_file_id || "",
         thumbnailLabel: v.video_number || "Film",
-        notes: v.description,
+        notes: v.description || undefined,
       }));
 
       const coverImg = editData.thumbnail_url || editData.hero_image_url || "/assets/about-editroom.webp";
@@ -1279,7 +1279,7 @@ export const getProject = async (slug: string): Promise<Project | undefined> => 
     }
 
     // 2. Try projects table for film/VFX projects
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("projects")
       .select("*")
       .eq("slug", slug)
