@@ -47,6 +47,16 @@ function getDefaultProjectsWithIds(): any[] {
   }));
 }
 
+function deduplicateProjects(list: any[]): any[] {
+  const seen = new Set<string>();
+  return list.filter((p) => {
+    const key = p.id || p.slug;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 async function loadFromStorage(): Promise<any[] | null> {
   try {
     const { data, error } = await supabaseAdmin.storage
@@ -57,7 +67,7 @@ async function loadFromStorage(): Promise<any[] | null> {
       const text = await data.text();
       const parsed = JSON.parse(text);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return deduplicateProjects(parsed);
       }
     }
   } catch (err) {
