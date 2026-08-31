@@ -285,34 +285,6 @@ export function SeoManagerForm() {
             </div>
           </div>
 
-          {/* Editing Portfolio */}
-          <div className="p-5 bg-charcoal/80 border border-border/60 rounded space-y-3">
-            <span className="label-track text-gold !text-[10px]">Route: /editing (Editing Portfolio)</span>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                value={settings.editingTitle || ""}
-                onChange={(e) =>
-                  setSettings({ ...settings, editingTitle: e.target.value })
-                }
-                className="bg-navy border border-border px-3 py-2.5 text-xs text-ivory focus:border-gold focus:outline-none"
-                placeholder="Editing Portfolio Page Title"
-              />
-              <input
-                type="text"
-                value={settings.editingDescription || ""}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    editingDescription: e.target.value,
-                  })
-                }
-                className="bg-navy border border-border px-3 py-2.5 text-xs text-ivory focus:border-gold focus:outline-none"
-                placeholder="Editing Portfolio Meta Description"
-              />
-            </div>
-          </div>
-
           {/* Contact */}
           <div className="p-5 bg-charcoal/80 border border-border/60 rounded space-y-3">
             <span className="label-track text-gold !text-[10px]">Route: /contact (Collaboration)</span>

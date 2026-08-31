@@ -3,13 +3,20 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 
 import { getProjects, type Project } from "@/data/projects";
+import {
+  editingProjectsData,
+  type EditingProject,
+} from "@/data/editing-projects";
 import { ProjectChapter } from "@/components/ProjectChapter";
+import { EditingProjectCard } from "@/components/EditingProjectCard";
+import { EditingVideoModal } from "@/components/EditingVideoModal";
 import { Reveal } from "@/components/Reveal";
 import { FocusReveal } from "@/components/FocusReveal";
 import { Stage } from "@/components/three/Stage";
 import { VideoModal } from "@/components/VideoModal";
 import { getShowreel, defaultShowreel, type ShowreelData } from "@/lib/showreel";
-import { getSeoSettings, defaultSeoSettings, type SeoSettingsData } from "@/lib/seo-settings";
+import { getSeoSettings, defaultSeoSettings } from "@/lib/seo-settings";
+import { sound } from "@/lib/sound";
 
 export const Route = createFileRoute("/portfolio/")({
   loader: async () => {
@@ -35,7 +42,9 @@ export const Route = createFileRoute("/portfolio/")({
   head: ({ loaderData }) => {
     const seo = loaderData?.seoSettings || defaultSeoSettings;
     const title = seo.portfolioTitle || "Selected Work — Rohith V | Filmmaker";
-    const description = seo.portfolioDescription || "Selected film work by Rohith V — short films, pilot films, CG and screenplay credits.";
+    const description =
+      seo.portfolioDescription ||
+      "Selected film work by Rohith V — short films, pilot films, CG, editing and screenplay credits presented as cinematic chapters.";
     return {
       meta: [
         { title },
@@ -71,6 +80,17 @@ function Portfolio() {
     loaderData?.projects && loaderData.projects.length > 0 ? loaderData.projects : []
   );
 
+  // Editing Project Modal State
+  const [editingModalOpen, setEditingModalOpen] = useState(false);
+  const [selectedEditingProject, setSelectedEditingProject] = useState<EditingProject | null>(null);
+  const [selectedEditingVideoIndex, setSelectedEditingVideoIndex] = useState<number>(0);
+
+  const handleOpenEditingVideo = (project: EditingProject, videoIndex: number = 0) => {
+    setSelectedEditingProject(project);
+    setSelectedEditingVideoIndex(videoIndex);
+    setEditingModalOpen(true);
+  };
+
   // Load / reload projects & showreel on mount
   useEffect(() => {
     Promise.all([getProjects(), getShowreel()]).then(([data, sr]) => {
@@ -96,14 +116,22 @@ function Portfolio() {
 
   const publishedProjects = projects.filter((p) => p.publishStatus !== "DRAFT");
 
-  const filteredProjects =
-    activeFilter === "all" ? publishedProjects : publishedProjects.filter((p) => p.category === activeFilter);
+  const filteredFilmProjects =
+    activeFilter === "all"
+      ? publishedProjects
+      : publishedProjects.filter((p) => p.category === activeFilter);
 
-  const featuredProject = publishedProjects.find((p) => p.slug === "one-last-day") || publishedProjects[0];
-  const otherProjects =
+  const featuredProject =
+    publishedProjects.find((p) => p.slug === "one-last-day") || publishedProjects[0];
+  const otherFilmProjects =
     activeFilter === "all"
       ? publishedProjects.filter((p) => p.slug !== (featuredProject?.slug || "one-last-day"))
-      : publishedProjects.filter((p) => p.category === activeFilter && p.slug !== (featuredProject?.slug || "one-last-day"));
+      : publishedProjects.filter(
+          (p) => p.category === activeFilter && p.slug !== (featuredProject?.slug || "one-last-day")
+        );
+
+  const showEditingSection = activeFilter === "all" || activeFilter === "EDITING";
+  const showFilmSection = activeFilter !== "EDITING";
 
   return (
     <section className="relative">
@@ -116,8 +144,7 @@ function Portfolio() {
           <p className="label-track text-gold">Portfolio</p>
           <h1 className="title-card mt-5 text-5xl text-ivory md:text-8xl">Selected Work</h1>
           <p className="mt-8 max-w-xl text-sm text-muted-foreground md:text-lg">
-            Film chapters — direction, CG, screenplay and creative work. Open a chapter to enter the
-            project.
+            Film chapters — direction, CG, editing, screenplay and creative post-production.
           </p>
         </FocusReveal>
 
@@ -157,15 +184,22 @@ function Portfolio() {
         <Reveal delay={0.1} className="mt-12">
           <div className="flex flex-wrap gap-2 md:gap-3 p-1.5 bg-navy/30 border border-border/70 inline-flex">
             {filters.map((filter) => {
-              const count =
-                filter.id === "all"
-                  ? publishedProjects.length
-                  : publishedProjects.filter((p) => p.category === filter.id).length;
+              let count = 0;
+              if (filter.id === "all") {
+                count = publishedProjects.length + editingProjectsData.length;
+              } else if (filter.id === "EDITING") {
+                count = editingProjectsData.length;
+              } else {
+                count = publishedProjects.filter((p) => p.category === filter.id).length;
+              }
 
               return (
                 <button
                   key={filter.id}
-                  onClick={() => setActiveFilter(filter.id)}
+                  onClick={() => {
+                    sound.playSoftClick();
+                    setActiveFilter(filter.id);
+                  }}
                   data-cursor="filter"
                   data-magnetic="true"
                   className={`relative label-track px-4 py-2.5 !text-[10px] transition-colors rounded-sm cursor-pointer select-none ${
@@ -198,7 +232,9 @@ function Portfolio() {
         </Reveal>
 
         {/* Dynamic Showreel Section (Gracefully hidden if disabled or empty) */}
-        {showreel.enabled && showreel.videoId && (activeFilter === "all" || activeFilter === (showreel.category || "VFX / CG")) ? (
+        {showreel.enabled &&
+        showreel.videoId &&
+        (activeFilter === "all" || activeFilter === (showreel.category || "VFX / CG")) ? (
           <Reveal delay={0.2} className="mt-16">
             <div className="border border-border/80 bg-navy/20 p-6 md:p-8 transition-colors hover:border-gold/40">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -224,59 +260,73 @@ function Portfolio() {
           </Reveal>
         ) : null}
 
-        {/* Projects with AnimatePresence */}
-        <motion.div layout className="mt-16">
-          <AnimatePresence mode="popLayout">
-            {(activeFilter === "all" ? otherProjects : filteredProjects).length > 0 ? (
-              (activeFilter === "all" ? otherProjects : filteredProjects).map((p, i) => (
+        {/* FILMMAKING / VFX / CG CHAPTERS */}
+        {showFilmSection && (
+          <motion.div layout className="mt-16">
+            <AnimatePresence mode="popLayout">
+              {(activeFilter === "all" ? otherFilmProjects : filteredFilmProjects).length > 0 ? (
+                (activeFilter === "all" ? otherFilmProjects : filteredFilmProjects).map((p, i) => (
+                  <motion.div
+                    key={p.slug}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <ProjectChapter project={p} index={i} />
+                  </motion.div>
+                ))
+              ) : activeFilter !== "all" && !showEditingSection ? (
                 <motion.div
-                  key={p.slug}
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="py-16 text-center"
+                >
+                  <p className="text-muted-foreground">No projects in this category yet.</p>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
+        {/* EDITING PROJECTS SECTION (Integrated directly into portfolio) */}
+        {showEditingSection && (
+          <motion.div layout className={showFilmSection ? "mt-24 border-t border-border pt-16" : "mt-16"}>
+            {activeFilter === "all" && (
+              <div className="mb-10">
+                <span className="label-track text-gold">POST-PRODUCTION & EDITING</span>
+                <h2 className="title-card mt-3 text-3xl sm:text-4xl text-ivory">
+                  Editing Projects
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground max-w-xl">
+                  Commercial, corporate, educational, television and freelance client edits streamed via Google Drive.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-8">
+              {editingProjectsData.map((project, idx) => (
+                <motion.div
+                  key={project.id}
                   layout
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 25 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <ProjectChapter project={p} index={i} />
+                  <EditingProjectCard
+                    project={project}
+                    index={idx}
+                    onWatchVideo={handleOpenEditingVideo}
+                  />
                 </motion.div>
-              ))
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="py-16 text-center"
-              >
-                <p className="text-muted-foreground">No projects in this category yet.</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Dedicated Editing Portfolio Feature Banner */}
-        <Reveal delay={0.25} className="mt-20">
-          <div className="border border-gold/40 bg-gradient-to-r from-navy/60 via-charcoal/80 to-navy/60 p-8 md:p-12 transition-all hover:border-gold/70 shadow-[0_10px_30px_rgba(201,164,76,0.08)]">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div className="max-w-2xl space-y-3">
-                <span className="label-track text-gold">FEATURED REEL & CLIENT WORK</span>
-                <h3 className="title-card text-2xl sm:text-3xl md:text-4xl text-ivory">
-                  Explore The Editing Portfolio
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Discover dedicated post-production edits including freelance client work, corporate videos for Skytree Solution, educational campaigns, and TV shows with Google Drive video player streaming.
-                </p>
-              </div>
-              <Link
-                to="/editing"
-                data-cursor="open editing →"
-                className="label-track bg-gold px-8 py-4 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-all inline-block text-center whitespace-nowrap shadow-lg"
-              >
-                VIEW EDITING PORTFOLIO →
-              </Link>
+              ))}
             </div>
-          </div>
-        </Reveal>
+          </motion.div>
+        )}
 
         {/* Selected Credits */}
         <Reveal delay={0.3} className="mt-24 border-t border-border pt-16">
@@ -314,11 +364,20 @@ function Portfolio() {
         </Reveal>
       </div>
 
+      {/* Showreel Video Modal */}
       <VideoModal
         isOpen={showreelOpen}
         onClose={() => setShowreelOpen(false)}
         videoId={showreel.videoId || "lYLTsC9RM9U"}
         title={showreel.title || "VFX Showreel"}
+      />
+
+      {/* Editing Project Cinematic Video Modal (Supports all 18 Google Drive Videos) */}
+      <EditingVideoModal
+        isOpen={editingModalOpen}
+        onClose={() => setEditingModalOpen(false)}
+        project={selectedEditingProject}
+        initialVideoIndex={selectedEditingVideoIndex}
       />
     </section>
   );

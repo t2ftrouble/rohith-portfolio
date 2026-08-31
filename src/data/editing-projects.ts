@@ -13,7 +13,7 @@ export interface EditingProject {
   title: string;
   role: string;
   type: string;
-  category: "Client / Personal" | "Corporate" | "Educational" | "Television" | "Commercial";
+  category: "EDITING";
   description: string;
   detailedPoints?: string[];
   toolsUsed?: string[];
@@ -99,48 +99,38 @@ export const editingProjectsData: EditingProject[] = [
     id: "personal-edits",
     slug: "personal-edits",
     number: "01",
-    title: "Personal Edits",
-    role: "Editor — footage enhancement, clean cuts, pacing, colour correction, subtitles, music, visual polish and After Effects finishing where needed.",
-    type: "Freelance / Personal Client Work",
-    category: "Client / Personal",
+    title: "PERSONAL EDITS",
+    role: "Editor — footage enhancement, clean cuts, pacing, colour correction, subtitles, music, visual polish and After Effects finishing.",
+    type: "Personal Work & Social Media",
+    category: "EDITING",
     description:
-      "Personal editing work created for friends, student creators and individual clients who approach me for small paid editing projects. I take their raw footage and shape it into a finished video with clean cuts, pacing, enhancement, colour correction, music, subtitles and visual polish. The work includes videos for political influencers and college students, adapting the edit to the purpose and audience of each project.",
-    detailedPoints: [
-      "Collaboration with friends, student creators and political influencer clients",
-      "Raw footage curation, selective take arrangement & story shaping",
-      "Dynamic narrative pacing, rhythmic audio sync & cut refinement",
-      "Colour correction, subtitle typography, visual polish & After Effects finishing",
-    ],
+      "Personal editing work created for friends, student creators and individual clients who approach me for small paid editing projects. I take their raw footage and shape it into a finished video with clean cuts, pacing, enhancement, colour correction, music, subtitles and visual polish. The work includes videos for political influencers and college students, adapting each edit to its purpose and audience.",
     toolsUsed: ["Premiere Pro", "DaVinci Resolve", "After Effects", "Photoshop"],
     aspectRatio: "16:9",
     videos: [
       {
         id: "pe-1",
-        title: "Personal Edit 01",
+        title: "Personal Edit — Video 01",
         thumbnailLabel: "Film 01",
         driveUrlOrId: "14DyIUsAOckUlDhnncV-vvwV1A4lKRG4f",
-        notes: "Client video edit with color correction & pacing",
       },
       {
         id: "pe-2",
-        title: "Personal Edit 02",
+        title: "Personal Edit — Video 02",
         thumbnailLabel: "Film 02",
         driveUrlOrId: "18JZLgyNq6bDacWY0yKT8FbX3dDvp9T6i",
-        notes: "Social media creator video with subtitles & music sync",
       },
       {
         id: "pe-3",
-        title: "Personal Edit 03",
+        title: "Personal Edit — Video 03",
         thumbnailLabel: "Film 03",
         driveUrlOrId: "1DetEXBoQEMIs53thvgz4_LWAZ09LTmJD",
-        notes: "Influencer content edit with After Effects finishing",
       },
       {
         id: "pe-4",
-        title: "Personal Edit 04",
+        title: "Personal Edit — Video 04",
         thumbnailLabel: "Film 04",
         driveUrlOrId: "1K_Dy4b_p6d2Z6_LQMWAAzpj6ETHnPI7i",
-        notes: "Student creator project with visual polish & clean cuts",
       },
     ],
     tags: ["Personal Work", "Social Media", "Colour Correction", "After Effects"],
@@ -150,27 +140,20 @@ export const editingProjectsData: EditingProject[] = [
     id: "skytree-solution",
     slug: "skytree-solution",
     number: "02",
-    title: "Skytree Solution",
+    title: "SKYTREE SOLUTION",
     role: "Editor — information edit, subtitles, visual assets, pacing and post-production.",
     type: "Corporate / Information Video",
-    category: "Corporate",
+    category: "EDITING",
     description:
       "An information-focused video created for Skytree Solution. The team provided the original shoot footage, and I handled the post-production — structuring the information clearly, editing the footage, adding subtitles, sourcing and placing visual assets and refining the presentation for a professional final output.",
-    detailedPoints: [
-      "Structuring corporate information logically for maximum clarity",
-      "Footage editing and arrangement from original shoot material",
-      "Dynamic subtitle styling and typography alignment",
-      "Visual asset sourcing, placement and final presentation refinement",
-    ],
     toolsUsed: ["Premiere Pro", "After Effects", "Photoshop"],
     aspectRatio: "16:9",
     videos: [
       {
         id: "skytree-1",
-        title: "Skytree Solution Corporate Overview",
+        title: "Skytree Solution Overview",
         thumbnailLabel: "Film 01",
         driveUrlOrId: "1PI2kVk5fRUQCaa0leyduwXKUw_-vaS01",
-        notes: "Corporate information edit with subtitles & visual assets",
       },
     ],
     tags: ["Corporate", "Information Video", "Subtitles", "Assets"],
@@ -180,27 +163,20 @@ export const editingProjectsData: EditingProject[] = [
     id: "tiruvannamalai-polytechnic",
     slug: "tiruvannamalai-polytechnic",
     number: "03",
-    title: "Tiruvannamalai Polytechnic",
+    title: "TIRUVANNAMALAI POLYTECHNIC",
     role: "Editor — online footage selection, assembly, pacing and promotional edit.",
     type: "College Promotional / Admission Video",
-    category: "Educational",
+    category: "EDITING",
     description:
       "A promotional and admission-oriented edit created for students interested in joining a Government Polytechnic College in Tiruvannamalai. I built the edit using relevant online footage, arranging the visuals and pacing to communicate the college and its admission message clearly.",
-    detailedPoints: [
-      "Curating and sourcing relevant high-definition online footage",
-      "Dynamic promotional sequencing targeted at prospective students",
-      "Paced montage editing aligned to an engaging musical soundtrack",
-      "Clear call-to-action framing for college admissions",
-    ],
     toolsUsed: ["Premiere Pro", "DaVinci Resolve", "Photoshop"],
     aspectRatio: "16:9",
     videos: [
       {
         id: "tvm-poly-1",
-        title: "Tiruvannamalai Polytechnic Admission Film",
+        title: "Tiruvannamalai Polytechnic Admission Video",
         thumbnailLabel: "Film 01",
         driveUrlOrId: "1Nu0gD0TD4heEAOcMnPwrtDyJoGmsbaQZ",
-        notes: "Promotional admission edit with online footage sourcing",
       },
     ],
     tags: ["Education", "Promotional", "Online Footage", "College"],
@@ -210,18 +186,12 @@ export const editingProjectsData: EditingProject[] = [
     id: "tv-show",
     slug: "tv-show",
     number: "04",
-    title: "TV Show",
+    title: "TV SHOW",
     role: "Concept, Planning, Script, Shoot, Re-lighting, Editing and Post-production.",
     type: "Television / News & Entertainment",
-    category: "Television",
+    category: "EDITING",
     description:
-      "A television-format project developed and executed by me from concept to production. I planned the format, worked on the script, handled the shoot and designed the re-lighting and visual presentation before editing the final episode. This section is intentionally structured for future updates because two additional TV-show videos will be added later.",
-    detailedPoints: [
-      "Complete concept-to-screen production pipeline management",
-      "Broadcast scripting, episode rundown & teleprompter pacing",
-      "Studio lighting design, camera blocking & multi-camera shoot",
-      "Full post-production packaging with broadcast graphics & audio master",
-    ],
+      "A television-format project developed and executed by me from concept to production. I planned the format, worked on the script, handled the shoot and designed the re-lighting and visual presentation before editing the final episode. Two additional TV-show videos will be added later.",
     toolsUsed: ["Premiere Pro", "After Effects", "Photoshop", "Studio Lighting"],
     aspectRatio: "16:9",
     videos: [
@@ -230,7 +200,6 @@ export const editingProjectsData: EditingProject[] = [
         title: "TV Show — Episode 01",
         thumbnailLabel: "Film 01",
         driveUrlOrId: "10V-hEqSaC93iYi1jmH-oclTr2qh_U6dz",
-        notes: "Lead broadcast episode (2 more episodes in post-production)",
       },
     ],
     tags: ["Television", "Self-Produced", "Script", "Shoot", "Re-lighting"],
@@ -241,18 +210,12 @@ export const editingProjectsData: EditingProject[] = [
     id: "vels-global-school",
     slug: "vels-global-school",
     number: "05",
-    title: "Vels Global School",
+    title: "VELS GLOBAL SCHOOL",
     role: "Editor — slow-paced cuts, music, pacing, After Effects, visual finishing and promotional post-production.",
     type: "School Promotional Campaign",
-    category: "Commercial",
+    category: "EDITING",
     description:
       "A collection of promotional videos edited for Vels Global School during a promotional month. The production team provided the footage, and I handled the post-production with a focus on slow, controlled pacing, clean cuts, music and professional visual finishing. I used After Effects where needed to elevate the presentation and deliver a polished result that satisfied the team.",
-    detailedPoints: [
-      "11 complete promotional campaign videos edited for promotional month",
-      "Controlled slow-paced rhythm reflecting institutional prestige",
-      "Aesthetic frame stabilization, color harmonisation & music syncing",
-      "After Effects motion graphics, title flourishes & professional visual finishing",
-    ],
     toolsUsed: ["Premiere Pro", "After Effects", "DaVinci Resolve"],
     aspectRatio: "16:9",
     videos: [
