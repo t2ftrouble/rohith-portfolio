@@ -66,7 +66,7 @@ export function ProjectChapter({ project, index }: { project: Project; index: nu
 
           <div className="mt-6 inline-flex items-center gap-2">
             <span className="label-track !tracking-[0.3em] text-ivory/80 transition-colors duration-300 group-hover:text-gold">
-              View film
+              {project.category === "EDITING" ? "View project" : "View film"}
             </span>
             <span className="text-gold transition-transform duration-300 ease-out group-hover:translate-x-2">
               →
@@ -99,7 +99,7 @@ export function ProjectChapter({ project, index }: { project: Project; index: nu
             <div className="vignette transition-opacity duration-500 group-hover:opacity-70" />
             <div className="scanlines absolute inset-0 opacity-20 pointer-events-none" />
 
-            {project.hasVideo && (
+            {(project.hasVideo || (project.driveVideos && project.driveVideos.length > 0)) && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full bg-gold/90 text-charcoal shadow-lg backdrop-blur-sm opacity-80 md:opacity-0 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:scale-110">
                   <Play size={26} className="text-charcoal fill-charcoal translate-x-0.5" />

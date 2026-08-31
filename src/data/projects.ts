@@ -5,6 +5,8 @@ import toothpaste from "@/assets/project-toothpaste.webp";
 import oneLastDayPoster from "@/assets/one-last-day-poster.webp";
 import oneLastDayBefore from "@/assets/one-last-day-before-cg.webp";
 import oneLastDayAfter from "@/assets/one-last-day-after-cg.webp";
+import aboutEditroom from "@/assets/about-editroom.webp";
+import heroStreet from "@/assets/hero-street.webp";
 import { resolveImageUrl } from "@/lib/asset-resolver";
 
 export interface GalleryItem {
@@ -43,24 +45,26 @@ export interface TeamMember {
   avatarUrl?: string;
   bio?: string;
   socialLink?: string;
+  order?: number;
   visible?: boolean;
 }
 
 export interface AwardItem {
   id?: string;
-  name: string;
-  organization?: string;
+  title: string;
+  festivalName: string;
   year?: string;
-  certificateUrl?: string;
-  description?: string;
-  visible?: boolean;
+  category?: string;
+  awardIconUrl?: string;
+  order?: number;
 }
 
 export interface ProjectLinkItem {
   id?: string;
   label: string;
   url: string;
-  platform?: "YouTube" | "Vimeo" | "IMDb" | "Instagram" | "Watch Film" | "Other" | string;
+  platform?: "YouTube" | "Vimeo" | "IMDb" | "Behance" | "Instagram" | "Website" | string;
+  icon?: string;
   visible?: boolean;
 }
 
@@ -86,6 +90,20 @@ export interface ProjectVideoConfig {
   type?: "youtube" | "vimeo" | "mp4" | undefined;
   autoplay?: boolean | undefined;
   muted?: boolean | undefined;
+}
+
+export interface ProjectDriveVideo {
+  id: string;
+  title: string;
+  driveFileId: string;
+  thumbnailLabel?: string;
+  notes?: string;
+}
+
+export interface EditingBreakdownItem {
+  title: string;
+  description: string;
+  tools?: string[];
 }
 
 export interface ProjectSEOSettings {
@@ -152,6 +170,12 @@ export type Project = {
   sectionVisibility?: SectionVisibility | undefined;
   videoConfig?: ProjectVideoConfig | undefined;
   seoSettings?: ProjectSEOSettings | undefined;
+
+  // Google Drive & Editing Specific Fields
+  driveVideos?: ProjectDriveVideo[] | undefined;
+  editingBreakdown?: EditingBreakdownItem[] | undefined;
+  notice?: string | undefined;
+  toolsUsed?: string[] | undefined;
 };
 
 export const defaultSectionVisibility: SectionVisibility = {
@@ -168,7 +192,7 @@ export const defaultSectionVisibility: SectionVisibility = {
   comments: true,
 };
 
-// Default fallback projects
+// Default fallback projects (Film, VFX & Editing)
 export const defaultProjects: Project[] = [
   {
     slug: "one-last-day",
@@ -397,6 +421,444 @@ export const defaultProjects: Project[] = [
       "Screenwriting taught me that every line must earn its place. This ongoing project is about patience and finding the right word at the right moment.",
     publishStatus: "PUBLISHED",
   },
+
+  // ----------------------------------------------------
+  // EDITING PORTFOLIO PROJECTS
+  // ----------------------------------------------------
+  {
+    slug: "personal-edits",
+    number: "05",
+    title: "Personal Edits",
+    type: "Freelance / Personal Client Work",
+    role: "Editor — footage enhancement, clean cuts, pacing, colour correction, subtitles, music, visual polish and After Effects finishing.",
+    year: "2024",
+    status: "Completed",
+    logline: "Shaping raw client and student footage into pacing-accurate, polished video content.",
+    synopsis:
+      "Personal editing work created for friends, student creators and individual clients who approach me for small paid editing projects. I take their raw footage and shape it into a finished video with clean cuts, pacing, enhancement, colour correction, music, subtitles and visual polish. The work includes videos for political influencers and college students, adapting each edit to its purpose and audience.",
+    duration: "4 FILMS",
+    formatSpecs: "16:9 • MULTI-VIDEO REEL",
+    tags: ["Personal Work", "Social Media", "Colour Correction", "After Effects"],
+    description:
+      "Personal editing work created for friends, student creators and individual clients who approach me for small paid editing projects. I take their raw footage and shape it into a finished video with clean cuts, pacing, enhancement, colour correction, music, subtitles and visual polish. The work includes videos for political influencers and college students, adapting each edit to its purpose and audience.",
+    process: [
+      "Reviewing and cataloging raw client footage",
+      "Assembly and rhythm-based rough cutting",
+      "Colour correction and contrast balancing",
+      "Music sync and audio enhancement",
+      "Subtitles, typography and After Effects finishing",
+    ],
+    visuals: "4 Video Edits, Social Media Cuts, After Effects Assets",
+    image: aboutEditroom,
+    heroImage: aboutEditroom,
+    thumbnailImage: aboutEditroom,
+    featuredThumbnail: aboutEditroom,
+    category: "EDITING",
+    emotionalDescriptor: "Every cut shapes the story.",
+    whatIFelt:
+      "Working with diverse client raw footage taught me adaptability — finding the natural rhythm of every person's voice and keeping the viewer locked into every frame.",
+    publishStatus: "PUBLISHED",
+    driveVideos: [
+      {
+        id: "pe-1",
+        title: "Personal Edit — Video 01",
+        thumbnailLabel: "Film 01",
+        driveFileId: "14DyIUsAOckUlDhnncV-vvwV1A4lKRG4f",
+      },
+      {
+        id: "pe-2",
+        title: "Personal Edit — Video 02",
+        thumbnailLabel: "Film 02",
+        driveFileId: "18JZLgyNq6bDacWY0yKT8FbX3dDvp9T6i",
+      },
+      {
+        id: "pe-3",
+        title: "Personal Edit — Video 03",
+        thumbnailLabel: "Film 03",
+        driveFileId: "1DetEXBoQEMIs53thvgz4_LWAZ09LTmJD",
+      },
+      {
+        id: "pe-4",
+        title: "Personal Edit — Video 04",
+        thumbnailLabel: "Film 04",
+        driveFileId: "1K_Dy4b_p6d2Z6_LQMWAAzpj6ETHnPI7i",
+      },
+    ],
+    toolsUsed: ["Premiere Pro", "DaVinci Resolve", "After Effects", "Photoshop"],
+    editingBreakdown: [
+      {
+        title: "Footage Enhancement & Clean Cuts",
+        description: "Removing awkward pauses, noise cleanup, stabilizing jittery shots, and setting a sharp, engaging baseline.",
+        tools: ["Premiere Pro", "DaVinci Resolve"],
+      },
+      {
+        title: "Colour Correction & Skin Tone Balance",
+        description: "Transforming mismatched lighting and varied camera profiles into cohesive, natural skin tones with cinematic depth.",
+        tools: ["DaVinci Resolve"],
+      },
+      {
+        title: "Music & Beat Synchronization",
+        description: "Aligning key moments and narrative transitions with musical accents for high viewer retention.",
+        tools: ["Premiere Pro"],
+      },
+      {
+        title: "Subtitles & After Effects Finishing",
+        description: "High-contrast dynamic subtitles, clean lower thirds, visual overlays, and brand graphics.",
+        tools: ["After Effects", "Photoshop"],
+      },
+    ],
+    seoSettings: {
+      seoTitle: "Personal Edits | Rohith V — Editing Portfolio",
+      metaDescription: "Personal editing work created for friends, student creators and individual clients with clean cuts, pacing, colour correction, and visual polish by Rohith V.",
+    },
+    sectionVisibility: { ...defaultSectionVisibility, beforeAfter: false, vfxBreakdown: false },
+    fullCredits: "Role: Editor\n\nEditing, Enhancement, Colour Correction, Subtitles, Music & After Effects Finishing: Rohith V",
+  },
+
+  {
+    slug: "skytree-solution",
+    number: "06",
+    title: "Skytree Solution",
+    type: "Corporate / Information Video",
+    role: "Editor — information edit, subtitles, visual assets, pacing and post-production.",
+    year: "2024",
+    status: "Completed",
+    logline: "Information-focused post-production structuring clear corporate messaging with professional asset placement.",
+    synopsis:
+      "An information-focused video created for Skytree Solution. The team provided the original shoot footage, and I handled the post-production — structuring the information clearly, editing the footage, adding subtitles, sourcing and placing visual assets and refining the presentation for a professional final output.",
+    duration: "1 FILM",
+    formatSpecs: "16:9 • CORPORATE POST-PRODUCTION",
+    tags: ["Corporate", "Information Video", "Subtitles", "Assets"],
+    description:
+      "An information-focused video created for Skytree Solution. The team provided the original shoot footage, and I handled the post-production — structuring the information clearly, editing the footage, adding subtitles, sourcing and placing visual assets and refining the presentation for a professional final output.",
+    process: [
+      "Structuring information flow and corporate messaging",
+      "Footage assembly and seamless transitions",
+      "Subtitles and typographic hierarchy",
+      "Visual asset placement and branding",
+      "Audio balancing and master export",
+    ],
+    visuals: "Corporate Film, Motion Graphics, Subtitled Master",
+    image: heroStreet,
+    heroImage: heroStreet,
+    thumbnailImage: heroStreet,
+    featuredThumbnail: heroStreet,
+    category: "EDITING",
+    emotionalDescriptor: "Clarity meets precision.",
+    whatIFelt:
+      "Corporate edits demand absolute clarity. The goal was to make technical information easy to absorb while preserving a modern, professional polish.",
+    publishStatus: "PUBLISHED",
+    driveVideos: [
+      {
+        id: "skytree-1",
+        title: "Skytree Solution Corporate Overview",
+        thumbnailLabel: "Film 01",
+        driveFileId: "1PI2kVk5fRUQCaa0leyduwXKUw_-vaS01",
+      },
+    ],
+    toolsUsed: ["Premiere Pro", "After Effects", "Photoshop"],
+    editingBreakdown: [
+      {
+        title: "Information Architecture & Pacing",
+        description: "Structuring corporate talking points into a logical, quick-to-digest narrative timeline.",
+        tools: ["Premiere Pro"],
+      },
+      {
+        title: "Visual Assets & Screen Callouts",
+        description: "Creating and animating screen callouts, icons, and graphic overlays supporting the speaker's points.",
+        tools: ["After Effects", "Photoshop"],
+      },
+      {
+        title: "Subtitles & Broadcast Typography",
+        description: "Clear, modern typography designed for corporate social channels and presentations.",
+        tools: ["Premiere Pro", "After Effects"],
+      },
+      {
+        title: "Audio Mastering",
+        description: "Voice equalization, background score ducking, and clean audio mastering.",
+        tools: ["Premiere Pro"],
+      },
+    ],
+    seoSettings: {
+      seoTitle: "Skytree Solution | Rohith V — Editing Portfolio",
+      metaDescription: "Information-focused video created for Skytree Solution with subtitles, visual assets, and post-production by Rohith V.",
+    },
+    sectionVisibility: { ...defaultSectionVisibility, beforeAfter: false, vfxBreakdown: false },
+    fullCredits: "Client: Skytree Solution\n\nEditor — Information edit, subtitles, visual assets, pacing and post-production: Rohith V",
+  },
+
+  {
+    slug: "tiruvannamalai-polytechnic",
+    number: "07",
+    title: "Tiruvannamalai Polytechnic",
+    type: "College Promotional / Admission Video",
+    role: "Editor — online footage selection, assembly, pacing and promotional edit.",
+    year: "2024",
+    status: "Completed",
+    logline: "Promotional and admission-focused narrative assembled from online assets with clear student engagement.",
+    synopsis:
+      "A promotional and admission-oriented edit created for students interested in joining a Government Polytechnic College in Tiruvannamalai. I built the edit using relevant online footage, arranging the visuals and pacing to communicate the college and its admission message clearly.",
+    duration: "1 FILM",
+    formatSpecs: "16:9 • ADMISSION CAMPAIGN",
+    tags: ["Education", "Promotional", "Online Footage", "College"],
+    description:
+      "A promotional and admission-oriented edit created for students interested in joining a Government Polytechnic College in Tiruvannamalai. I built the edit using relevant online footage, arranging the visuals and pacing to communicate the college and its admission message clearly.",
+    process: [
+      "Curating and evaluating existing online college footage",
+      "Assembling an engaging, student-centric storyline",
+      "Fast-paced cutting and visual momentum",
+      "Clear admission deadline & department callouts",
+      "Dynamic soundtrack alignment",
+    ],
+    visuals: "Promotional Video, Online Asset Assembly",
+    image: aboutEditroom,
+    heroImage: aboutEditroom,
+    thumbnailImage: aboutEditroom,
+    featuredThumbnail: aboutEditroom,
+    category: "EDITING",
+    emotionalDescriptor: "Inspiring the next generation.",
+    whatIFelt:
+      "When working with archived online footage, storytelling is everything. It was about creating rhythm and excitement to encourage students towards higher education.",
+    publishStatus: "PUBLISHED",
+    driveVideos: [
+      {
+        id: "tvm-poly-1",
+        title: "Tiruvannamalai Polytechnic Admission Video",
+        thumbnailLabel: "Film 01",
+        driveFileId: "1Nu0gD0TD4heEAOcMnPwrtDyJoGmsbaQZ",
+      },
+    ],
+    toolsUsed: ["Premiere Pro", "DaVinci Resolve", "Photoshop"],
+    editingBreakdown: [
+      {
+        title: "Online Footage Selection & Upscaling",
+        description: "Filtering online footage sources, color matching clips from multiple resolutions, and sharpening visual presentation.",
+        tools: ["Premiere Pro", "DaVinci Resolve"],
+      },
+      {
+        title: "Pacing & Student Engagement",
+        description: "Upbeat rhythm designed to capture the attention of prospective polytechnic candidates.",
+        tools: ["Premiere Pro"],
+      },
+      {
+        title: "Call-to-Action & Information Overlays",
+        description: "Admission procedures, contact numbers, and department highlights clearly presented.",
+        tools: ["Photoshop", "Premiere Pro"],
+      },
+    ],
+    seoSettings: {
+      seoTitle: "Tiruvannamalai Polytechnic | Rohith V — Editing Portfolio",
+      metaDescription: "Promotional and admission-oriented edit for Government Polytechnic College in Tiruvannamalai by Rohith V.",
+    },
+    sectionVisibility: { ...defaultSectionVisibility, beforeAfter: false, vfxBreakdown: false },
+    fullCredits: "Project: Government Polytechnic College, Tiruvannamalai\n\nEditor — Online footage selection, assembly, pacing and promotional edit: Rohith V",
+  },
+
+  {
+    slug: "tv-show",
+    number: "08",
+    title: "TV Show",
+    type: "Television / News & Entertainment",
+    role: "Concept, Planning, Script, Shoot, Re-lighting, Editing and Post-production.",
+    year: "2024",
+    status: "Completed",
+    logline: "Television-format production developed end-to-end with broadcast pacing and studio aesthetics.",
+    synopsis:
+      "A television-format project developed and executed by me from concept to production. I planned the format, worked on the script, handled the shoot and designed the re-lighting and visual presentation before editing the final episode.",
+    duration: "1 FILM (+ 2 IN PIPELINE)",
+    formatSpecs: "16:9 • BROADCAST FORMAT",
+    tags: ["Television", "Self-Produced", "Script", "Shoot", "Re-lighting"],
+    description:
+      "A television-format project developed and executed by me from concept to production. I planned the format, worked on the script, handled the shoot and designed the re-lighting and visual presentation before editing the final episode.",
+    notice: "Two additional TV-show videos will be added later.",
+    process: [
+      "TV show concept development and rundown formatting",
+      "Screenplay and host scripting",
+      "Studio re-lighting and multi-cam setup",
+      "Principal photography / shoot execution",
+      "Broadcast editing, graphics, and master grading",
+    ],
+    visuals: "TV Episode, Multi-Cam Edits, Studio Graphics",
+    image: heroStreet,
+    heroImage: heroStreet,
+    thumbnailImage: heroStreet,
+    featuredThumbnail: heroStreet,
+    category: "EDITING",
+    emotionalDescriptor: "From concept to broadcast screen.",
+    whatIFelt:
+      "Owning every stage of a TV format—from the lighting grid and script to the edit timeline—gave me complete control over visual tone and viewer momentum.",
+    publishStatus: "PUBLISHED",
+    driveVideos: [
+      {
+        id: "tv-show-ep1",
+        title: "TV Show — Episode 01",
+        thumbnailLabel: "Film 01",
+        driveFileId: "10V-hEqSaC93iYi1jmH-oclTr2qh_U6dz",
+      },
+    ],
+    toolsUsed: ["Premiere Pro", "After Effects", "Photoshop", "Studio Lighting"],
+    editingBreakdown: [
+      {
+        title: "Studio Lighting & Camera Alignment",
+        description: "Custom key/fill/rim lighting design and camera multi-angle matching.",
+        tools: ["Studio Lighting", "DaVinci Resolve"],
+      },
+      {
+        title: "Multi-Angle Assembly & Cuts",
+        description: "Seamless host and guest reaction switching with frame-accurate cues.",
+        tools: ["Premiere Pro"],
+      },
+      {
+        title: "Television Lower Thirds & Title Cards",
+        description: "Broadcast-ready motion graphics, show identity, and lower thirds.",
+        tools: ["After Effects", "Photoshop"],
+      },
+      {
+        title: "Broadcast Audio Mastering",
+        description: "Multi-track voice leveling, stingers, and ambient audio management.",
+        tools: ["Premiere Pro"],
+      },
+    ],
+    seoSettings: {
+      seoTitle: "TV Show | Rohith V — Editing Portfolio",
+      metaDescription: "Television-format project executed from concept to production, script, shoot, lighting, and post-production by Rohith V.",
+    },
+    sectionVisibility: { ...defaultSectionVisibility, beforeAfter: false, vfxBreakdown: false },
+    fullCredits: "Format / Script / Shoot / Lighting / Editing: Rohith V\n\nNote: 2 additional TV-show episodes currently in post-production pipeline.",
+  },
+
+  {
+    slug: "vels-global-school",
+    number: "09",
+    title: "Vels Global School",
+    type: "School Promotional Campaign",
+    role: "Editor — slow-paced cuts, music, pacing, After Effects, visual finishing and promotional post-production.",
+    year: "2024",
+    status: "Completed",
+    logline: "Multi-video promotional campaign crafted with controlled pacing, elegant music, and After Effects visual finishing.",
+    synopsis:
+      "A collection of promotional videos edited for Vels Global School during a promotional month. The production team provided the footage, and I handled the post-production with a focus on slow, controlled pacing, clean cuts, music and professional visual finishing. I used After Effects where needed to elevate the presentation and deliver a polished result that satisfied the team.",
+    duration: "11 FILMS",
+    formatSpecs: "16:9 • MULTI-REEL CAMPAIGN",
+    tags: ["School Promotion", "Promotional Campaign", "After Effects", "Music", "Pacing"],
+    description:
+      "A collection of promotional videos edited for Vels Global School during a promotional month. The production team provided the footage, and I handled the post-production with a focus on slow, controlled pacing, clean cuts, music and professional visual finishing. I used After Effects where needed to elevate the presentation and deliver a polished result that satisfied the team.",
+    process: [
+      "Reviewing extensive footage archives across multiple school activities",
+      "Developing a calm, slow-paced aesthetic tailored for educational prestige",
+      "After Effects title animations and badge placements",
+      "Musical synchronization with warm acoustic compositions",
+      "Color grading for vibrant student and campus visuals",
+      "Exporting 11 distinct promotional cuts for marketing distribution",
+    ],
+    visuals: "11 Campaign Videos, Social Media Cuts, After Effects Assets",
+    image: aboutEditroom,
+    heroImage: aboutEditroom,
+    thumbnailImage: aboutEditroom,
+    featuredThumbnail: aboutEditroom,
+    category: "EDITING",
+    emotionalDescriptor: "Graceful pacing that captures learning.",
+    whatIFelt:
+      "Promotional videos often rush. For Vels Global School, letting the frames breathe and using soft, controlled cuts created an atmosphere of elegance and trust.",
+    publishStatus: "PUBLISHED",
+    driveVideos: [
+      {
+        id: "vels-1",
+        title: "Vels Global School — Promo 01",
+        thumbnailLabel: "Film 01",
+        driveFileId: "1-BU1tuMwiYmrbXJkmO4Ocomy4CLBeVji",
+      },
+      {
+        id: "vels-2",
+        title: "Vels Global School — Promo 02",
+        thumbnailLabel: "Film 02",
+        driveFileId: "18-EBZZAxbMk_STve6qT1HsKsf9FkugMM",
+      },
+      {
+        id: "vels-3",
+        title: "Vels Global School — Promo 03",
+        thumbnailLabel: "Film 03",
+        driveFileId: "1QW6ygLMztpNBwzddJ1LomXK38dp5dneu",
+      },
+      {
+        id: "vels-4",
+        title: "Vels Global School — Promo 04",
+        thumbnailLabel: "Film 04",
+        driveFileId: "1QYN765jBLU8q0WEPKfQVdykW8N70O247",
+      },
+      {
+        id: "vels-5",
+        title: "Vels Global School — Promo 05",
+        thumbnailLabel: "Film 05",
+        driveFileId: "1UA6DVZgrcZyeBVptlevK1EmWSxV59qNH",
+      },
+      {
+        id: "vels-6",
+        title: "Vels Global School — Promo 06",
+        thumbnailLabel: "Film 06",
+        driveFileId: "1cakvM1_kGLgG6hLItlXOnpCNx1Toi4Yt",
+      },
+      {
+        id: "vels-7",
+        title: "Vels Global School — Promo 07",
+        thumbnailLabel: "Film 07",
+        driveFileId: "1gIWapFh7kfeWlSwhn4AICQ9IPhfyo7tj",
+      },
+      {
+        id: "vels-8",
+        title: "Vels Global School — Promo 08",
+        thumbnailLabel: "Film 08",
+        driveFileId: "1k5C_j99Ah9NPUqtSFOu1lOG4Dz2qEtsW",
+      },
+      {
+        id: "vels-9",
+        title: "Vels Global School — Promo 09",
+        thumbnailLabel: "Film 09",
+        driveFileId: "1p56IODwZcFSp6QlByZyervFlQX8zBUlc",
+      },
+      {
+        id: "vels-10",
+        title: "Vels Global School — Promo 10",
+        thumbnailLabel: "Film 10",
+        driveFileId: "1reyuAbDjZcx5j3pi2KlUYK7iU2-5NnAz",
+      },
+      {
+        id: "vels-11",
+        title: "Vels Global School — Promo 11",
+        thumbnailLabel: "Film 11",
+        driveFileId: "1u7kmvkP5mUgdqha43VecsT-NgaQh8zmd",
+      },
+    ],
+    toolsUsed: ["Premiere Pro", "After Effects", "DaVinci Resolve"],
+    editingBreakdown: [
+      {
+        title: "Slow-Paced Editorial Cadence",
+        description: "Carefully calibrated shot durations allowing emotional expressions and school facilities to be appreciated without rush.",
+        tools: ["Premiere Pro"],
+      },
+      {
+        title: "Motion Typography & After Effects",
+        description: "Elegantly animated school accolades, program features, and logo reveals.",
+        tools: ["After Effects"],
+      },
+      {
+        title: "Warm Cinematic Color Palette",
+        description: "Enhancing natural sunlight and campus greenery for an inviting, vibrant look.",
+        tools: ["DaVinci Resolve"],
+      },
+      {
+        title: "Acoustic Audio Sync",
+        description: "Syncing joyful moments to acoustic melodies with clean dialogue and ambient campus presence.",
+        tools: ["Premiere Pro"],
+      },
+    ],
+    seoSettings: {
+      seoTitle: "Vels Global School | Rohith V — Editing Portfolio",
+      metaDescription: "Collection of 11 promotional films edited for Vels Global School with slow-paced cuts, music, and After Effects visual finishing by Rohith V.",
+    },
+    sectionVisibility: { ...defaultSectionVisibility, beforeAfter: false, vfxBreakdown: false },
+    fullCredits: "Client: Vels Global School\n\nEditor — Slow-paced cuts, music, pacing, After Effects, visual finishing and promotional post-production: Rohith V",
+  },
 ];
 
 import { supabase } from "@/integrations/supabase/client";
@@ -448,13 +910,18 @@ export function transformSupabaseProject(p: any): Project {
     }));
   }
 
-  // Parse structured team credits
+  // Parse team credits
   let teamCredits: TeamMember[] = [];
   if (Array.isArray(p.team_credits) && p.team_credits.length > 0) {
     teamCredits = p.team_credits.map((m: any) => ({
       ...m,
-      avatarUrl: m.avatarUrl ? resolveImageUrl(m.avatarUrl) : undefined,
-      visible: m.visible !== false,
+      avatarUrl: m.avatarUrl || m.avatar_url ? resolveImageUrl(m.avatarUrl || m.avatar_url) : undefined,
+    }));
+  } else if (Array.isArray(p.credits) && p.credits.length > 0) {
+    teamCredits = p.credits.map((c: any) => ({
+      name: c.name,
+      role: c.role,
+      visible: true,
     }));
   }
 
@@ -463,100 +930,116 @@ export function transformSupabaseProject(p: any): Project {
   if (Array.isArray(p.awards) && p.awards.length > 0) {
     awards = p.awards.map((a: any) => ({
       ...a,
-      certificateUrl: a.certificateUrl ? resolveImageUrl(a.certificateUrl) : undefined,
-      visible: a.visible !== false,
+      awardIconUrl: a.awardIconUrl || a.award_icon_url ? resolveImageUrl(a.awardIconUrl || a.award_icon_url) : undefined,
     }));
   }
 
   // Parse project links
   let projectLinks: ProjectLinkItem[] = [];
   if (Array.isArray(p.project_links) && p.project_links.length > 0) {
-    projectLinks = p.project_links.filter((l: any) => l.visible !== false);
+    projectLinks = p.project_links;
   }
 
-  // Parse section visibility
+  // Section visibility
   const sectionVisibility: SectionVisibility = {
     ...defaultSectionVisibility,
-    ...(typeof p.section_visibility === "object" && p.section_visibility !== null ? p.section_visibility : {}),
+    ...(p.section_visibility || {}),
   };
 
   // Video config
-  const videoConfig: ProjectVideoConfig = typeof p.video_config === "object" && p.video_config !== null
-    ? {
-        ...p.video_config,
-        videoId: p.video_config.videoId || p.video_id || undefined,
-        posterImage: p.video_config.posterImage ? resolveImageUrl(p.video_config.posterImage) : undefined,
-      }
-    : {
-        videoId: p.video_id || undefined,
-        posterImage: p.poster_image ? resolveImageUrl(p.poster_image) : undefined,
-        type: "youtube",
-      };
+  const videoConfig: ProjectVideoConfig = {
+    videoUrl: p.video_url,
+    videoId: p.video_id,
+    title: p.video_title,
+    posterImage: p.video_poster ? resolveImageUrl(p.video_poster) : undefined,
+    type: p.video_type || "youtube",
+    autoplay: p.video_autoplay,
+    muted: p.video_muted,
+  };
 
   // SEO settings
-  const seoSettings: ProjectSEOSettings = typeof p.seo_settings === "object" && p.seo_settings !== null
-    ? {
-        ...p.seo_settings,
-        ogImage: p.seo_settings.ogImage ? resolveImageUrl(p.seo_settings.ogImage) : undefined,
-      }
-    : {
-        seoTitle: p.title ? `${p.title} — ${p.type || "Film"} | Rohith V` : undefined,
-        metaDescription: p.description || undefined,
-      };
+  const seoSettings: ProjectSEOSettings = {
+    seoTitle: p.seo_title,
+    metaDescription: p.meta_description,
+    keywords: p.keywords,
+    ogTitle: p.og_title,
+    ogDescription: p.og_description,
+    ogImage: p.og_image ? resolveImageUrl(p.og_image) : undefined,
+    imageAlt: p.image_alt,
+    canonicalUrl: p.canonical_url,
+  };
+
+  // Drive videos & editing breakdown
+  const driveVideos: ProjectDriveVideo[] = Array.isArray(p.drive_videos)
+    ? p.drive_videos
+    : Array.isArray(p.driveVideos)
+    ? p.driveVideos
+    : [];
+
+  const editingBreakdown: EditingBreakdownItem[] = Array.isArray(p.editing_breakdown)
+    ? p.editing_breakdown
+    : Array.isArray(p.editingBreakdown)
+    ? p.editingBreakdown
+    : [];
+
+  const image = resolveImageUrl(p.image || p.cover_image || p.hero_image || "");
+  const heroImage = resolveImageUrl(p.hero_image || p.image || "");
+  const thumbnailImage = resolveImageUrl(p.thumbnail_image || p.image || "");
+  const featuredThumbnail = resolveImageUrl(p.featured_thumbnail || p.image || "");
+
+  // Find matching default project for editing enrichments if present
+  const defaultFallback = defaultProjects.find((dp) => dp.slug === p.slug);
 
   return {
     slug: p.slug,
-    number: p.number,
+    number: p.number ? String(p.number).padStart(2, "0") : "01",
     title: p.title,
-    type: p.type,
-    role: p.role,
-    year: p.year || undefined,
-    status: p.status || undefined,
+    type: p.type || "Film Project",
+    role: p.role || "Filmmaker",
+    year: p.year ? String(p.year) : undefined,
+    status: p.status,
     description: p.description || "",
     process: Array.isArray(p.process) ? p.process : [],
     visuals: p.visuals || "",
-    image: resolveImageUrl(p.image || ""),
-    hasVideo: Boolean(p.has_video || videoConfig.videoId || videoConfig.videoUrl),
-    videoId: p.video_id || videoConfig.videoId || undefined,
-    fullCredits: p.full_credits || undefined,
-    category: p.category || "FILMMAKING",
-    posterImage: p.poster_image ? resolveImageUrl(p.poster_image) : undefined,
-    showBeforeAfter: Boolean(p.show_before_after || beforeAfterPairs.length > 0),
-    beforeImage: p.before_image ? resolveImageUrl(p.before_image) : undefined,
-    afterImage: p.after_image ? resolveImageUrl(p.after_image) : undefined,
-    galleryImages: Array.isArray(p.gallery_images)
-      ? p.gallery_images.map(resolveImageUrl)
-      : galleryItems.map((g) => g.url),
-    client: p.client || undefined,
-    emotionalDescriptor: p.emotional_descriptor || undefined,
-    whatIFelt: p.what_i_felt || undefined,
-    publishStatus: (p.publish_status === "DRAFT" || p.status === "DRAFT") ? "DRAFT" : "PUBLISHED",
-
-    // New Fields
-    heroImage: p.hero_image ? resolveImageUrl(p.hero_image) : resolveImageUrl(p.image || ""),
-    thumbnailImage: p.thumbnail_image ? resolveImageUrl(p.thumbnail_image) : resolveImageUrl(p.image || ""),
-    featuredThumbnail: p.featured_thumbnail ? resolveImageUrl(p.featured_thumbnail) : resolveImageUrl(p.image || ""),
-    ogImage: p.og_image ? resolveImageUrl(p.og_image) : (seoSettings.ogImage || resolveImageUrl(p.image || "")),
-    imageAlt: p.image_alt || `${p.title} — ${p.type || "Film"}`,
-    logline: p.logline || p.emotional_descriptor || undefined,
-    synopsis: p.synopsis || p.description || undefined,
-    directorNote: p.director_note || p.what_i_felt || undefined,
-    duration: p.duration || undefined,
-    formatSpecs: p.format_specs || undefined,
-    tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : [p.category || "FILMMAKING"],
-    galleryItems: galleryItems.length > 0 ? galleryItems : undefined,
-    beforeAfterPairs: beforeAfterPairs.length > 0 ? beforeAfterPairs : undefined,
-    vfxBreakdowns: vfxBreakdowns.length > 0 ? vfxBreakdowns : undefined,
-    teamCredits: teamCredits.length > 0 ? teamCredits : undefined,
-    awards: awards.length > 0 ? awards : undefined,
-    projectLinks: projectLinks.length > 0 ? projectLinks : undefined,
+    image: image || defaultFallback?.image || "",
+    heroImage: heroImage || defaultFallback?.heroImage || "",
+    thumbnailImage: thumbnailImage || defaultFallback?.thumbnailImage || "",
+    featuredThumbnail: featuredThumbnail || defaultFallback?.featuredThumbnail || "",
+    posterImage: p.poster_image ? resolveImageUrl(p.poster_image) : defaultFallback?.posterImage,
+    showBeforeAfter: p.show_before_after ?? p.showBeforeAfter ?? false,
+    beforeImage: p.before_image ? resolveImageUrl(p.before_image) : defaultFallback?.beforeImage,
+    afterImage: p.after_image ? resolveImageUrl(p.after_image) : defaultFallback?.afterImage,
+    hasVideo: p.has_video ?? p.hasVideo ?? false,
+    videoId: p.video_id || p.videoId || defaultFallback?.videoId,
+    category: p.category || defaultFallback?.category || "FILMMAKING",
+    fullCredits: p.full_credits || p.fullCredits || defaultFallback?.fullCredits,
+    emotionalDescriptor: p.emotional_descriptor || defaultFallback?.emotionalDescriptor,
+    whatIFelt: p.what_i_felt || defaultFallback?.whatIFelt,
+    publishStatus: p.publish_status || "PUBLISHED",
+    logline: p.logline || defaultFallback?.logline,
+    synopsis: p.synopsis || p.description || defaultFallback?.synopsis,
+    directorNote: p.director_note || defaultFallback?.directorNote,
+    duration: p.duration || defaultFallback?.duration,
+    formatSpecs: p.format_specs || defaultFallback?.formatSpecs,
+    tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : defaultFallback?.tags || [],
+    galleryItems: galleryItems.length > 0 ? galleryItems : defaultFallback?.galleryItems,
+    galleryImages: galleryItems.length > 0 ? galleryItems.map((g) => g.url) : defaultFallback?.galleryImages,
+    beforeAfterPairs: beforeAfterPairs.length > 0 ? beforeAfterPairs : defaultFallback?.beforeAfterPairs,
+    vfxBreakdowns: vfxBreakdowns.length > 0 ? vfxBreakdowns : defaultFallback?.vfxBreakdowns,
+    teamCredits: teamCredits.length > 0 ? teamCredits : defaultFallback?.teamCredits,
+    awards: awards.length > 0 ? awards : defaultFallback?.awards,
+    projectLinks: projectLinks.length > 0 ? projectLinks : defaultFallback?.projectLinks,
     sectionVisibility,
     videoConfig,
     seoSettings,
+    driveVideos: driveVideos.length > 0 ? driveVideos : defaultFallback?.driveVideos,
+    editingBreakdown: editingBreakdown.length > 0 ? editingBreakdown : defaultFallback?.editingBreakdown,
+    notice: p.notice || defaultFallback?.notice,
+    toolsUsed: Array.isArray(p.tools_used) ? p.tools_used : defaultFallback?.toolsUsed,
   };
 }
 
-// Get projects directly from Supabase (works universally in SSR, serverless, and browser client)
+// Get projects directly from Supabase with fallback to defaultProjects (Film, VFX and Editing)
 export async function getProjects(includeDrafts = false): Promise<Project[]> {
   try {
     const { data, error } = await supabase
@@ -566,7 +1049,11 @@ export async function getProjects(includeDrafts = false): Promise<Project[]> {
 
     if (!error && data && data.length > 0) {
       const transformed = data.map(transformSupabaseProject);
-      return includeDrafts ? transformed : transformed.filter((p) => p.publishStatus !== "DRAFT");
+      // Merge in any default projects that aren't yet created in Supabase (e.g. the 5 editing projects)
+      const existingSlugs = new Set(transformed.map((p) => p.slug));
+      const missingDefaults = defaultProjects.filter((dp) => !existingSlugs.has(dp.slug));
+      const combined = [...transformed, ...missingDefaults];
+      return includeDrafts ? combined : combined.filter((p) => p.publishStatus !== "DRAFT");
     }
 
     if (error) {
@@ -580,7 +1067,10 @@ export async function getProjects(includeDrafts = false): Promise<Project[]> {
         const json = await response.json();
         if (json.projects && Array.isArray(json.projects)) {
           const transformed = json.projects.map(transformSupabaseProject);
-          return includeDrafts ? transformed : transformed.filter((p: Project) => p.publishStatus !== "DRAFT");
+          const existingSlugs = new Set(transformed.map((p: Project) => p.slug));
+          const missingDefaults = defaultProjects.filter((dp) => !existingSlugs.has(dp.slug));
+          const combined = [...transformed, ...missingDefaults];
+          return includeDrafts ? combined : combined.filter((p: Project) => p.publishStatus !== "DRAFT");
         }
       }
     }
@@ -590,7 +1080,10 @@ export async function getProjects(includeDrafts = false): Promise<Project[]> {
     }
 
     const transformed = (data || []).map(transformSupabaseProject);
-    return includeDrafts ? transformed : transformed.filter((p: Project) => p.publishStatus !== "DRAFT");
+    const existingSlugs = new Set(transformed.map((p) => p.slug));
+    const missingDefaults = defaultProjects.filter((dp) => !existingSlugs.has(dp.slug));
+    const combined = [...transformed, ...missingDefaults];
+    return includeDrafts ? combined : combined.filter((p: Project) => p.publishStatus !== "DRAFT");
   } catch (error) {
     console.error("getProjects error, falling back to default projects:", error);
     return includeDrafts ? defaultProjects : defaultProjects.filter((p) => p.publishStatus !== "DRAFT");
