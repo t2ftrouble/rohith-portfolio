@@ -27,7 +27,6 @@ interface AdminDashboardOverviewProps {
     tab:
       | "dashboard"
       | "projects"
-      | "editing-projects"
       | "comments"
       | "media"
       | "social"
@@ -105,7 +104,7 @@ export function AdminDashboardOverview({
 
         {/* EDITING PROJECTS */}
         <div
-          onClick={() => onNavigateTab("editing-projects")}
+          onClick={() => onNavigateTab("projects")}
           className="border border-border/80 bg-navy/30 p-5 rounded hover:border-gold/60 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">

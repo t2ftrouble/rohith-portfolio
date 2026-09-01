@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { ProjectForm } from "@/components/admin/ProjectForm";
-import { ProjectList } from "@/components/admin/ProjectList";
+import { ProjectsWorkspace } from "@/components/admin/ProjectsWorkspace";
 import { SocialLinksForm } from "@/components/admin/SocialLinksForm";
 import { SiteImagesForm } from "@/components/admin/SiteImagesForm";
 import { AdminDashboardOverview } from "@/components/admin/AdminDashboardOverview";
@@ -38,9 +38,6 @@ import {
   deleteProject,
 } from "@/lib/project-cms";
 
-import { EditingProjectsManager } from "@/components/admin/EditingProjectsManager";
-import { Scissors } from "lucide-react";
-
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
@@ -54,7 +51,6 @@ export const Route = createFileRoute("/admin")({
 export type AdminTab =
   | "dashboard"
   | "projects"
-  | "editing-projects"
   | "comments"
   | "media"
   | "social"
@@ -143,16 +139,16 @@ function Admin() {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         setIsAuthenticated(true);
         setPassword("");
         await Promise.all([loadProjects(), loadUnreadCount()]);
       } else {
-        setError(data.error || "Invalid password");
+        setError(data.error || "Invalid password. Access denied.");
       }
     } catch (err) {
-      setError("Login failed. Please check your network and try again.");
       console.error("Login error:", err);
+      setError("Failed to authenticate. Please check connection.");
     } finally {
       setIsLoading(false);
     }
@@ -165,72 +161,87 @@ function Admin() {
         credentials: "include",
       });
     } catch (err) {
-      console.error("Logout error:", err);
+      console.warn("Logout request failed:", err);
+    } finally {
+      setIsAuthenticated(false);
+      setPassword("");
+      setProjects([]);
+      setEditingProject(null);
+      setIsAdding(false);
     }
-    setIsAuthenticated(false);
-    setPassword("");
-    setProjects([]);
-    setEditingProject(null);
-    setIsAdding(false);
   };
 
-  const handleSave = async (projectData: ProjectFormData) => {
+  const handleSave = async (formData: ProjectFormData) => {
     setIsSaving(true);
     setError("");
     setSaveSuccess(null);
 
     try {
       if (editingProject) {
-        await updateProject(editingProject.id, projectData);
-        setSaveSuccess(`✓ Project "${projectData.title}" updated successfully`);
+        // Update existing project
+        const updated = await updateProject(editingProject.id, formData);
+        setProjects((prev) =>
+          prev.map((p) => (p.id === editingProject.id ? updated : p))
+        );
+        setSaveSuccess(`✓ Project "${formData.title}" updated and synced successfully!`);
       } else {
-        await addProject(projectData);
-        setSaveSuccess(`✓ Project "${projectData.title}" created successfully`);
+        // Add new project
+        const created = await addProject(formData);
+        setProjects((prev) => [...prev, created]);
+        setSaveSuccess(`✓ Project "${formData.title}" created and published successfully!`);
       }
-      await loadProjects();
       setEditingProject(null);
       setIsAdding(false);
-    } catch (err: unknown) {
-      console.error("Save error:", err);
-      setError(err instanceof Error ? err.message : "Failed to save project. Check required fields.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleTogglePublish = async (project: ProjectCMSData) => {
-    const nextStatus = project.publishStatus === "DRAFT" ? "PUBLISHED" : "DRAFT";
-    try {
-      await updateProject(project.id, { publishStatus: nextStatus });
-      setSaveSuccess(`✓ "${project.title}" is now ${nextStatus}`);
       await loadProjects();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to toggle publishing status");
+      console.error("Save error:", err);
+      const msg = err instanceof Error ? err.message : "Failed to save project. Ensure database connection is active.";
+      setError(msg);
+      throw err;
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     const project = projects.find((p) => p.id === id);
     const title = project?.title || "this project";
+
     if (!confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
       return;
     }
 
     try {
       await deleteProject(id);
-      setSaveSuccess(`✓ Project "${title}" deleted successfully`);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      setSaveSuccess(`✓ Project "${title}" deleted.`);
       await loadProjects();
     } catch (err: unknown) {
       console.error("Delete error:", err);
-      setError(err instanceof Error ? err.message : "Failed to delete project");
+      const msg = err instanceof Error ? err.message : "Failed to delete project.";
+      setError(msg);
     }
   };
 
-  const handleEdit = (project: ProjectCMSData) => {
-    setEditingProject(project);
-    setIsAdding(false);
-    setError("");
-    setSaveSuccess(null);
+  const handleTogglePublish = async (project: ProjectCMSData) => {
+    const newStatus = project.publishStatus === "DRAFT" ? "PUBLISHED" : "DRAFT";
+    try {
+      const updated = await updateProject(project.id, {
+        publishStatus: newStatus,
+        status: newStatus === "DRAFT" ? "DRAFT" : "Completed",
+      });
+      setProjects((prev) =>
+        prev.map((p) => (p.id === project.id ? updated : p))
+      );
+      setSaveSuccess(
+        `✓ "${project.title}" is now ${newStatus === "PUBLISHED" ? "PUBLISHED (Live on Website)" : "DRAFT (Hidden from Public)"}`
+      );
+      await loadProjects();
+    } catch (err: unknown) {
+      console.error("Toggle publish error:", err);
+      const msg = err instanceof Error ? err.message : "Failed to update project publish status.";
+      setError(msg);
+    }
   };
 
   const handleCancel = () => {
@@ -248,8 +259,7 @@ function Admin() {
 
   const navItems: AdminNavItem[] = [
     { id: "dashboard", label: "DASHBOARD", icon: LayoutDashboard },
-    { id: "projects", label: `FILM & VFX (${projects.length})`, icon: Film },
-    { id: "editing-projects", label: "EDITING PROJECTS", icon: Scissors },
+    { id: "projects", label: "PROJECTS", icon: Film },
     { id: "comments", label: "COMMENTS", icon: MessageSquare },
     { id: "media", label: "WEBSITE MEDIA", icon: ImageIcon },
     { id: "social", label: "SOCIAL LINKS", icon: Share2 },
@@ -494,13 +504,22 @@ function Admin() {
             unreadEnquiriesCount={unreadEnquiriesCount}
             onNavigateTab={(tab) => setActiveTab(tab as AdminTab)}
             onAddNewProject={() => {
+              setActiveTab("projects");
               setEditingProject(null);
               setIsAdding(true);
               setError("");
             }}
           />
-        ) : activeTab === "editing-projects" ? (
-          <EditingProjectsManager />
+        ) : activeTab === "projects" ? (
+          <ProjectsWorkspace
+            filmProjects={projects}
+            isLoadingFilm={isLoading}
+            onRefreshFilm={loadProjects}
+            onSaveFilm={handleSave}
+            onDeleteFilm={handleDelete}
+            onTogglePublishFilm={handleTogglePublish}
+            isSavingFilm={isSaving}
+          />
         ) : activeTab === "comments" ? (
           <CommentModerationForm />
         ) : activeTab === "homepage" ? (
@@ -519,33 +538,7 @@ function Admin() {
           <SocialLinksForm />
         ) : activeTab === "media" ? (
           <SiteImagesForm />
-        ) : (
-          <>
-            <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <button
-                onClick={() => {
-                  setEditingProject(null);
-                  setIsAdding(true);
-                  setError("");
-                }}
-                className="label-track bg-gold px-8 py-4 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-colors flex items-center gap-2 cursor-pointer shadow-lg min-h-[44px] rounded"
-              >
-                <Plus size={16} />
-                Add New Project
-              </button>
-              <span className="label-track text-xs text-muted-foreground">
-                {projects.length} {projects.length === 1 ? "Project" : "Projects"} in database
-              </span>
-            </div>
-
-            <ProjectList
-              projects={projects}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onTogglePublish={handleTogglePublish}
-            />
-          </>
-        )}
+        ) : null}
       </div>
     </section>
   );
