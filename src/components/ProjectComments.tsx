@@ -1,5 +1,18 @@
-import { useState, useEffect } from "react";
-import { MessageSquare, Send, Trash2, Edit2, Check, X, ShieldAlert } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  MessageSquare,
+  Send,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  ShieldAlert,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  LogOut,
+  RefreshCw,
+} from "lucide-react";
 import { sound } from "@/lib/sound";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,6 +26,13 @@ export interface CommentItem {
   content: string;
   status: "PENDING" | "APPROVED" | "HIDDEN" | "REJECTED";
   createdAt: string;
+  // snake_case optional aliases
+  project_slug?: string;
+  user_id?: string;
+  user_name?: string;
+  user_email?: string;
+  user_avatar?: string;
+  created_at?: string;
 }
 
 interface ProjectCommentsProps {
@@ -22,6 +42,7 @@ interface ProjectCommentsProps {
 
 export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsProps) {
   const [comments, setComments] = useState<CommentItem[]>([]);
+  const [userPendingComments, setUserPendingComments] = useState<CommentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<{ id: string; name: string; email: string; avatar?: string } | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -29,19 +50,29 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
 
+  // 1. Session Detection
   useEffect(() => {
-    // 1. Check Supabase Auth user session
     const checkSupabaseAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.user) {
           const u = session.user;
           const userObj = {
             id: u.id,
-            name: u.user_metadata?.["full_name"] || u.user_metadata?.["name"] || u.email?.split("@")[0] || "Film Viewer",
+            name:
+              u.user_metadata?.["full_name"] ||
+              u.user_metadata?.["name"] ||
+              u.email?.split("@")[0] ||
+              "Film Viewer",
             email: u.email || "",
-            avatar: u.user_metadata?.["avatar_url"] || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.email || "User")}`,
+            avatar:
+              u.user_metadata?.["avatar_url"] ||
+              u.user_metadata?.["picture"] ||
+              `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.email || "User")}`,
           };
           setUser(userObj);
           return;
@@ -50,8 +81,8 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
         console.warn("Supabase auth session check:", err);
       }
 
-      // 2. Fallback to localStorage session
-      const savedUser = localStorage.getItem("rohith_comment_user");
+      // Fallback to cached user session
+      const savedUser = typeof window !== "undefined" ? localStorage.getItem("rohith_comment_user") : null;
       if (savedUser) {
         try {
           setUser(JSON.parse(savedUser));
@@ -60,51 +91,62 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
     };
 
     checkSupabaseAuth();
-    loadComments();
 
-    // Listen for auth state changes
+    // Listen for OAuth redirects and auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const u = session.user;
         const userObj = {
           id: u.id,
-          name: u.user_metadata?.["full_name"] || u.user_metadata?.["name"] || u.email?.split("@")[0] || "Film Viewer",
+          name:
+            u.user_metadata?.["full_name"] ||
+            u.user_metadata?.["name"] ||
+            u.email?.split("@")[0] ||
+            "Film Viewer",
           email: u.email || "",
-          avatar: u.user_metadata?.["avatar_url"] || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.email || "User")}`,
+          avatar:
+            u.user_metadata?.["avatar_url"] ||
+            u.user_metadata?.["picture"] ||
+            `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.email || "User")}`,
         };
         setUser(userObj);
         localStorage.setItem("rohith_comment_user", JSON.stringify(userObj));
-      } else if (!localStorage.getItem("rohith_comment_user")) {
-        setUser(null);
       }
     });
 
     return () => {
       authListener?.subscription?.unsubscribe();
     };
-  }, [projectSlug]);
+  }, []);
 
-  const loadComments = async () => {
+  // 2. Load Approved Comments
+  const loadComments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/comments?projectSlug=${encodeURIComponent(projectSlug)}`);
+      const res = await fetch(`/api/comments?projectSlug=${encodeURIComponent(projectSlug)}`, {
+        cache: "no-store",
+      });
       if (res.ok) {
         const data = await res.json();
         setComments(data.comments || []);
       }
-    } catch {
-      // Graceful fallback
+    } catch (err) {
+      console.warn("Comments load error:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectSlug]);
 
+  useEffect(() => {
+    loadComments();
+  }, [loadComments]);
+
+  // 3. Google Sign-In
   const handleGoogleSignIn = async () => {
     sound.playSoftClick();
+    setAuthError(null);
 
     try {
-      // Attempt real Supabase OAuth Google Sign-in
-      // Use clean origin + pathname so OAuth returns to the exact current project page
       const redirectUrl =
         typeof window !== "undefined"
           ? `${window.location.origin}${window.location.pathname}`
@@ -118,14 +160,16 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
       });
 
       if (error) {
-        console.warn("Supabase Google OAuth initialization notice:", error.message);
-        // Fallback to guest identity prompt if Google Cloud OAuth client isn't connected in Supabase
-        const simulatedName = prompt("Enter your Name for Comment Sign-in:", "Film Enthusiast");
-        if (!simulatedName) return;
-        const simulatedEmail = prompt("Enter your Email:", "viewer@gmail.com") || "viewer@gmail.com";
+        console.warn("Supabase Google OAuth error:", error.message);
+        setAuthError(`Google Sign-In notice: ${error.message}. You can also enter your viewer name to participate.`);
         
+        // Graceful fallback prompt
+        const simulatedName = prompt("Enter your Name for Film Discussion:", "Film Viewer");
+        if (!simulatedName) return;
+        const simulatedEmail = prompt("Enter your Email (optional):", "viewer@gmail.com") || "viewer@gmail.com";
+
         const newUser = {
-          id: `usr_${Date.now()}`,
+          id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           name: simulatedName.trim(),
           email: simulatedEmail.trim(),
           avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(simulatedName)}`,
@@ -133,21 +177,11 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
 
         setUser(newUser);
         localStorage.setItem("rohith_comment_user", JSON.stringify(newUser));
+        setAuthError(null);
       }
-    } catch {
-      const simulatedName = prompt("Enter your Name for Comment Sign-in:", "Film Enthusiast");
-      if (!simulatedName) return;
-      const simulatedEmail = prompt("Enter your Email:", "viewer@gmail.com") || "viewer@gmail.com";
-      
-      const newUser = {
-        id: `usr_${Date.now()}`,
-        name: simulatedName.trim(),
-        email: simulatedEmail.trim(),
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(simulatedName)}`,
-      };
-
-      setUser(newUser);
-      localStorage.setItem("rohith_comment_user", JSON.stringify(newUser));
+    } catch (err: any) {
+      console.error("Sign in error:", err);
+      setAuthError(err.message || "Failed to initiate sign-in");
     }
   };
 
@@ -158,15 +192,25 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
     } catch {}
     setUser(null);
     localStorage.removeItem("rohith_comment_user");
+    setUserPendingComments([]);
+    setNotice(null);
   };
 
+  // 4. Post New Comment
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      setNotice({ type: "error", text: "Please sign in with Google to post your comment." });
+      setNotice({ type: "error", text: "Please sign in with Google to post your thoughts." });
       return;
     }
-    if (!commentText.trim()) return;
+
+    const text = commentText.trim();
+    if (!text) return;
+
+    if (text.length > 1000) {
+      setNotice({ type: "error", text: "Comment is too long (maximum 1000 characters)." });
+      return;
+    }
 
     setIsSubmitting(true);
     setNotice(null);
@@ -182,44 +226,58 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
           userName: user.name,
           userEmail: user.email,
           userAvatar: user.avatar,
-          content: commentText.trim(),
+          content: text,
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Failed to post comment" }));
-        throw new Error(err.error || "Failed to post comment");
+        throw new Error(data.error || "Failed to post comment");
       }
 
       setCommentText("");
       setNotice({
         type: "success",
-        text: "✓ Your comment was submitted and is pending moderation approval.",
+        text: "✓ Your comment has been submitted and is currently pending admin moderation approval.",
       });
+
+      // Keep user's submitted comment locally visible with pending badge
+      if (data.comment) {
+        setUserPendingComments((prev) => [data.comment, ...prev]);
+      }
+
       await loadComments();
     } catch (err: any) {
-      setNotice({ type: "error", text: err.message || "Could not post comment." });
+      setNotice({ type: "error", text: err.message || "Could not post comment. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // 5. Delete Own Comment
   const handleDelete = async (id: string) => {
     if (!user || !confirm("Are you sure you want to remove your comment?")) return;
     sound.playSoftClick();
 
     try {
-      const res = await fetch(`/api/comments?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(user.id)}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/comments?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(user.id)}`,
+        {
+          method: "DELETE",
+        }
+      );
+
       if (res.ok) {
         setComments((prev) => prev.filter((c) => c.id !== id));
+        setUserPendingComments((prev) => prev.filter((c) => c.id !== id));
       }
     } catch (err) {
-      console.error(err);
+      console.error("Delete own comment error:", err);
     }
   };
 
+  // 6. Edit Own Comment
   const handleSaveEdit = async (id: string) => {
     if (!user || !editText.trim()) return;
     sound.playSoftClick();
@@ -237,36 +295,66 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
 
       if (res.ok) {
         setEditingId(null);
+        setNotice({
+          type: "success",
+          text: "✓ Edited comment submitted for re-moderation.",
+        });
         await loadComments();
       }
     } catch (err) {
-      console.error(err);
+      console.error("Edit own comment error:", err);
     }
   };
 
+  // Combine approved public comments with any newly submitted comments by the current user
+  const displayComments = useMemo(() => {
+    const combined = [...userPendingComments, ...comments];
+    const seen = new Set<string>();
+    return combined.filter((c) => {
+      if (!c.id || seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+  }, [userPendingComments, comments]);
+
   return (
-    <div className="border border-border/80 bg-navy/20 p-6 md:p-10 space-y-8">
+    <div className="border border-border/80 bg-navy/20 p-6 md:p-10 space-y-8 rounded">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-6">
         <div>
           <p className="label-track text-gold flex items-center gap-2">
-            <MessageSquare size={14} /> FILM DISCUSSION
+            <MessageSquare size={14} /> FILM DISCUSSION & AUDIENCE FEEDBACK
           </p>
-          <h3 className="title-card mt-2 text-2xl text-ivory">Share your thoughts on this film.</h3>
+          <h3 className="title-card mt-2 text-2xl text-ivory">
+            Thoughts on {projectTitle}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Join the conversation. Comments are moderated to maintain thoughtful artistic discussion.
+          </p>
         </div>
 
         <div>
           {user ? (
-            <div className="flex items-center gap-3 bg-charcoal border border-border px-3 py-1.5 rounded">
-              {user.avatar && (
-                <img src={user.avatar} alt={user.name} className="h-6 w-6 rounded-full border border-gold/40" />
+            <div className="flex items-center gap-3 bg-charcoal border border-border px-3.5 py-2 rounded">
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.name} className="h-6 w-6 rounded-full border border-gold/40 object-cover" />
+              ) : (
+                <div className="h-6 w-6 rounded-full bg-gold/20 flex items-center justify-center text-[10px] text-gold font-bold">
+                  {user.name.slice(0, 1).toUpperCase()}
+                </div>
               )}
-              <span className="text-xs text-ivory font-mono">{user.name}</span>
+              <div className="flex flex-col">
+                <span className="text-xs text-ivory font-mono font-medium">{user.name}</span>
+                {user.email && <span className="text-[10px] text-muted-foreground font-mono">{user.email}</span>}
+              </div>
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="text-[10px] text-muted-foreground hover:text-red-400 font-mono transition-colors cursor-pointer"
+                className="text-[10px] text-muted-foreground hover:text-red-400 font-mono transition-colors ml-2 cursor-pointer flex items-center gap-1"
+                title="Sign Out"
               >
-                (Sign Out)
+                <LogOut size={11} />
+                <span>Sign Out</span>
               </button>
             </div>
           ) : (
@@ -274,9 +362,9 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
               type="button"
               onClick={handleGoogleSignIn}
               data-cursor="google sign in"
-              className="label-track flex items-center gap-2 bg-charcoal border border-gold/60 px-4 py-2.5 !text-[9px] text-gold hover:bg-gold hover:!text-charcoal transition-all rounded shadow-sm cursor-pointer font-bold"
+              className="label-track flex items-center gap-2.5 bg-charcoal border border-gold/60 px-4 py-2.5 !text-[9px] text-gold hover:bg-gold hover:!text-charcoal transition-all rounded shadow-sm cursor-pointer font-bold"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -300,143 +388,219 @@ export function ProjectComments({ projectSlug, projectTitle }: ProjectCommentsPr
         </div>
       </div>
 
-      {/* Submission Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+      {/* Auth Notice */}
+      {authError && (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs rounded flex items-center gap-2">
+          <AlertCircle size={14} className="shrink-0" />
+          <span>{authError}</span>
+        </div>
+      )}
+
+      {/* Submission Feedback */}
+      {notice && (
+        <div
+          className={`p-3.5 rounded text-xs flex items-center justify-between border ${
+            notice.type === "success"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+              : "bg-red-500/10 border-red-500/30 text-red-400"
+          }`}
+        >
+          <span>{notice.text}</span>
+          <button onClick={() => setNotice(null)} className="text-[10px] hover:underline cursor-pointer">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Comment Form */}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="relative">
           <textarea
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             disabled={!user || isSubmitting}
-            maxLength={1000}
             placeholder={
               user
-                ? `Write your thoughts on ${projectTitle}...`
-                : "Continue with Google above to share your thoughts, critiques, or observations..."
+                ? `Share your thoughts or breakdown analysis on ${projectTitle}... (max 1000 characters)`
+                : "Please click 'CONTINUE WITH GOOGLE' above to post your thoughts on this film."
             }
+            maxLength={1000}
             rows={3}
-            className="w-full bg-charcoal border border-border px-4 py-3 text-sm text-ivory placeholder:text-muted-foreground focus:border-gold focus:outline-none transition-colors disabled:opacity-50 resize-none rounded"
+            className="w-full bg-charcoal/90 border border-border p-4 text-sm text-ivory placeholder:text-muted-foreground/60 focus:border-gold focus:outline-none transition-colors rounded resize-y disabled:opacity-50 disabled:cursor-not-allowed"
           />
+          {user && (
+            <span className="absolute bottom-2.5 right-3 text-[10px] text-muted-foreground font-mono">
+              {commentText.length}/1000
+            </span>
+          )}
         </div>
 
-        {notice && (
-          <div
-            className={`p-3 rounded text-xs border ${
-              notice.type === "success"
-                ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
-                : "bg-red-500/10 border-red-500/40 text-red-400"
-            }`}
-          >
-            {notice.text}
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <p className="text-[11px] text-muted-foreground">
-            Moderated discussion. Comments appear publicly after admin approval. ({commentText.length}/1000 chars)
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] text-muted-foreground font-mono">
+            Comments appear publicly after approval.
           </p>
 
           <button
             type="submit"
             disabled={!user || !commentText.trim() || isSubmitting}
-            className="label-track self-end sm:self-auto flex items-center gap-2 bg-gold px-6 py-2.5 !text-[10px] !text-charcoal font-bold hover:bg-gold/90 transition-all rounded disabled:opacity-40 cursor-pointer shadow-md"
+            className="label-track bg-gold px-6 py-2.5 !text-[9px] !text-charcoal font-bold hover:bg-gold/90 transition-all rounded disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer shadow-md"
           >
-            {isSubmitting ? "Submitting..." : (
+            {isSubmitting ? (
               <>
-                <Send size={12} /> POST COMMENT
+                <RefreshCw size={12} className="animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send size={12} />
+                Post Comment
               </>
             )}
           </button>
         </div>
       </form>
 
-      {/* Comment List */}
+      {/* Comments List */}
       <div className="space-y-4 pt-4 border-t border-border/40">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-mono uppercase tracking-wider text-gold flex items-center gap-2">
+            <span>AUDIENCE DISCUSSION</span>
+            <span className="text-ivory">({displayComments.length})</span>
+          </h4>
+
+          <button
+            type="button"
+            onClick={loadComments}
+            disabled={isLoading}
+            className="text-[10px] font-mono text-muted-foreground hover:text-gold flex items-center gap-1 cursor-pointer"
+          >
+            <RefreshCw size={10} className={isLoading ? "animate-spin" : ""} />
+            <span>Refresh</span>
+          </button>
+        </div>
+
         {isLoading ? (
-          <p className="text-xs text-muted-foreground">Loading comments...</p>
-        ) : comments.length === 0 ? (
-          <div className="py-8 text-center border border-dashed border-border/40 rounded bg-charcoal/20">
-            <p className="text-xs text-muted-foreground">No public comments yet. Be the first to share your review!</p>
+          <div className="py-8 text-center text-xs text-gold font-mono flex items-center justify-center gap-2">
+            <RefreshCw size={14} className="animate-spin" />
+            <span>Loading discussion...</span>
+          </div>
+        ) : displayComments.length === 0 ? (
+          <div className="py-8 text-center border border-dashed border-border/60 rounded bg-charcoal/40">
+            <p className="text-xs text-muted-foreground">
+              No comments yet on {projectTitle}. Be the first to share your perspective!
+            </p>
           </div>
         ) : (
-          comments.map((c) => (
-            <div
-              key={c.id}
-              className="p-4 rounded border border-border/60 bg-charcoal/60 space-y-3 transition-colors hover:border-border"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src={c.userAvatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.userName)}`}
-                    alt={c.userName}
-                    className="h-7 w-7 rounded-full border border-gold/30 object-cover"
-                  />
-                  <div>
-                    <h5 className="text-xs font-semibold text-ivory">{c.userName}</h5>
-                    <span className="text-[9px] text-muted-foreground font-mono">
-                      {new Date(c.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                </div>
+          <div className="space-y-3">
+            {displayComments.map((c) => {
+              const userName = c.userName || (c as any).user_name || "Film Viewer";
+              const userAvatar = c.userAvatar || (c as any).user_avatar;
+              const createdAt = c.createdAt || (c as any).created_at || new Date().toISOString();
+              const isPending = (c.status || (c as any).status) === "PENDING";
+              const isOwner = user && user.id === (c.userId || (c as any).user_id);
+              const isEditing = editingId === c.id;
 
-                {user && user.id === c.userId && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(c.id);
-                        setEditText(c.content);
-                      }}
-                      className="text-muted-foreground hover:text-gold transition-colors p-1"
-                      title="Edit"
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(c.id)}
-                      className="text-muted-foreground hover:text-red-400 transition-colors p-1"
-                      title="Delete"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                )}
-              </div>
+              return (
+                <div
+                  key={c.id}
+                  className={`p-4 rounded border transition-colors ${
+                    isPending
+                      ? "border-amber-500/40 bg-amber-500/5"
+                      : "border-border/60 bg-charcoal/60"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2.5">
+                      {userAvatar ? (
+                        <img
+                          src={userAvatar}
+                          alt={userName}
+                          className="h-7 w-7 rounded-full border border-gold/40 object-cover"
+                        />
+                      ) : (
+                        <div className="h-7 w-7 rounded-full bg-gold/20 flex items-center justify-center text-[10px] text-gold font-bold">
+                          {userName.slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-ivory">{userName}</span>
+                          {isPending && (
+                            <span className="label-track !text-[8px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.2 rounded inline-flex items-center gap-1 font-mono">
+                              <Clock size={9} /> Pending Approval
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {new Date(createdAt).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    </div>
 
-              {editingId === c.id ? (
-                <div className="space-y-2 pt-2">
-                  <textarea
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    rows={2}
-                    className="w-full bg-navy border border-gold/60 p-2 text-xs text-ivory focus:outline-none"
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(null)}
-                      className="px-3 py-1 text-[10px] border border-border text-ivory"
-                    >
-                      <X size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSaveEdit(c.id)}
-                      className="px-3 py-1 text-[10px] bg-gold text-charcoal font-bold flex items-center gap-1"
-                    >
-                      <Check size={12} /> Save
-                    </button>
+                    {isOwner && !isEditing && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingId(c.id);
+                            setEditText(c.content);
+                          }}
+                          className="text-[10px] hover:text-gold transition-colors flex items-center gap-1 cursor-pointer font-mono"
+                          title="Edit Comment"
+                        >
+                          <Edit2 size={11} /> Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(c.id)}
+                          className="text-[10px] hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer font-mono"
+                          title="Delete Comment"
+                        >
+                          <Trash2 size={11} /> Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
+
+                  {isEditing ? (
+                    <div className="space-y-2 pt-1">
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        rows={2}
+                        maxLength={1000}
+                        className="w-full bg-navy/80 border border-gold/60 p-2.5 text-xs text-ivory focus:outline-none rounded"
+                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          className="text-[10px] font-mono text-muted-foreground hover:text-ivory px-2 py-1"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEdit(c.id)}
+                          className="label-track bg-gold text-charcoal font-bold px-3 py-1 text-[9px] rounded"
+                        >
+                          Save Changes
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-ivory/90 leading-relaxed font-sans whitespace-pre-wrap">
+                      {c.content}
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <p className="text-sm text-ivory/85 leading-relaxed font-sans">{c.content}</p>
-              )}
-            </div>
-          ))
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
